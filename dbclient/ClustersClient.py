@@ -12,6 +12,7 @@ class ClustersClient(dbclient):
         super().__init__(configs)
         self._checkpoint_service = checkpoint_service
         self.groups_to_keep = configs.get("groups_to_keep", False)
+        self.skip_missing_users = configs['skip_missing_users']
 
     create_configs = {'num_workers',
                       'autoscale',
@@ -276,7 +277,7 @@ class ClustersClient(dbclient):
                     if 'cluster_id' in cluster_conf:
                         checkpoint_cluster_configs_set.write(cluster_conf['cluster_id'])
                 else:
-                    logging_utils.log_reponse_error(error_logger, cluster_resp)
+                    logging_utils.log_response_error(error_logger, cluster_resp)
                     print(cluster_resp)
 
         # TODO: May be put it into a separate step to make it more rerunnable.
@@ -299,9 +300,17 @@ class ClustersClient(dbclient):
                     raise ValueError(error_message)
                 api = f'/preview/permissions/clusters/{cid}'
                 resp = self.put(api, acl_args)
-                if not logging_utils.log_reponse_error(error_logger, resp):
-                    if 'object_id' in data:
-                        checkpoint_cluster_configs_set.write(data['object_id'])
+
+                if self.skip_missing_users:
+                    ignore_error_list = ["RESOURCE_DOES_NOT_EXIST", "RESOURCE_ALREADY_EXISTS"]
+                else:
+                    ignore_error_list = ["RESOURCE_ALREADY_EXISTS"]
+
+                if logging_utils.check_error(resp, ignore_error_list):
+                    logging_utils.log_response_error(error_logger, resp)
+                elif 'object_id' in data:
+                    checkpoint_cluster_configs_set.write(data['object_id'])
+
                 print(resp)
 
     def _log_cluster_ids_and_original_creators(
@@ -397,7 +406,7 @@ class ClustersClient(dbclient):
                                    'definition': policy_conf['definition']}
                     resp = self.post('/policies/clusters/create', create_args)
                     ignore_error_list = ['INVALID_PARAMETER_VALUE']
-                    if not logging_utils.log_reponse_error(error_logger, resp, ignore_error_list=ignore_error_list):
+                    if not logging_utils.log_response_error(error_logger, resp, ignore_error_list=ignore_error_list):
                         if 'policy_id' in policy_conf:
                             checkpoint_cluster_policies_set.write(policy_conf['policy_id'])
 
@@ -412,7 +421,7 @@ class ClustersClient(dbclient):
                     policy_id = id_map[p_acl['name']]
                     api = f'/permissions/cluster-policies/{policy_id}'
                     resp = self.put(api, acl_create_args)
-                    if not logging_utils.log_reponse_error(error_logger, resp):
+                    if not logging_utils.log_response_error(error_logger, resp):
                         if 'object_id' in p_acl:
                             checkpoint_cluster_policies_set.write(p_acl['object_id'])
         else:
@@ -430,7 +439,7 @@ class ClustersClient(dbclient):
                 pool_conf = json.loads(line)
                 pool_resp = self.post('/instance-pools/create', pool_conf)
                 ignore_error_list = ['INVALID_PARAMETER_VALUE']
-                logging_utils.log_reponse_error(error_logger, pool_resp, ignore_error_list=ignore_error_list)
+                logging_utils.log_response_error(error_logger, pool_resp, ignore_error_list=ignore_error_list)
 
     def import_instance_profiles(self, log_file='instance_profiles.log'):
         # currently an AWS only operation
@@ -453,7 +462,7 @@ class ClustersClient(dbclient):
                 if ip_arn not in list_of_profiles:
                     print("Importing arn: {0}".format(ip_arn))
                     resp = self.post('/instance-profiles/add', {'instance_profile_arn': ip_arn})
-                    if not logging_utils.log_reponse_error(error_logger, resp):
+                    if not logging_utils.log_response_error(error_logger, resp):
                         import_profiles_count += 1
                 else:
                     logging.info("Skipping since profile already exists: {0}".format(ip_arn))
