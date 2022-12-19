@@ -66,9 +66,9 @@ class Split():
                 if len(d) != 0:
                     d = d.strip()
                     d = json.loads(d)
-                    if d['userName'] in df['userName'].tolist():
+                    if d['emails'][0]['value'] in df['userName'].tolist():
                         data_write.append(d)
-                        self.imported_users.append(d['userName'])
+                        self.imported_users.append(d['emails'][0]['value'])
             except Exception as e:
                 errors['Data'].append(d)
                 errors['Error'].append(e)
@@ -268,7 +268,7 @@ class Split():
                 if len(d) != 0:
                     d = d.strip()
                     d = json.loads(d)
-                    if d['path'] in df.loc[(df['mount_paths'].tolist():
+                    if d['path'] in df['mount_paths'].tolist():
                         data_write.append(d)
             except Exception as e:
                 errors['Data'].append(d)

@@ -3,7 +3,7 @@ import os
 import json
 import shutil
 import pandas as pd
-import datetime
+from datetime import datetime
 
 class Workspace():
     def __init__(self, checkpoint, workspace, all_workspaces):
@@ -41,7 +41,7 @@ class Workspace():
             'table_acls':["metastore", split.table_acls]
         }
         print("-"*80)
-        print(f"Starting with workspace {workspace}...")
+        print(f"CREATING WORKSPACE {workspace}...")
         self.create_workspace(workspace, checkpoint)
 
     @staticmethod
@@ -82,7 +82,7 @@ class Workspace():
         """
         # for each
         for m in self.map.keys():
-            print(f"{datetime.now()}   Starting with {m}...")
+            print(f"{datetime.now()}   Starting to split {m}.")
             try:
                 # get the asset function that splits that asset
                 module_function = self.map[m][1]
@@ -103,10 +103,9 @@ class Workspace():
         current_df = df[df[self.workspace] == "Y"]
         # send that subset dataframe to the module function found in Split class
         errors = module_function(current_df.reset_index())
-
         #pushing all errors to a csv
         if 'errors' not in self.new_path:
             os.mkdir(self.new_path + 'errors')
-            pd.DataFrame(errors).to_csv(self.new_path + 'errors/' + sheet_name)
+            pd.DataFrame(errors).to_csv(self.new_path + 'errors/' + sheet_name + '.csv')
         # success should be 0
         return 0
