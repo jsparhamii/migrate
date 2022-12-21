@@ -106,6 +106,10 @@ class Workspace():
         #pushing all errors to a csv
         if 'errors' not in self.new_path:
             os.mkdir(self.new_path + 'errors')
-            pd.DataFrame(errors).to_csv(self.new_path + 'errors/' + sheet_name + '.csv')
+
+        if len(errors[0]) > 0:
+            print(f"{datetime.now()}   There are errors. Please review error logs for {module}")
+
+        pd.DataFrame(errors).to_csv(self.new_path + 'errors/' + sheet_name + '.csv')
         # success should be 0
         return 0

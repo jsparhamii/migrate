@@ -61,14 +61,14 @@ def main(checkpoint):
     # shared
     try:
         shared_df = util.create_shared_logs(checkpoint, directory_name = "artifacts/Shared")
-        util.save_to_csv(shared_df, 'shared_logs.csv')
+        util.save_to_csv(shared_df, 'global_shared_logs.csv')
     except:
         print("Error while trying to read shared directory. Skipping...")
 
     # other artificats
     try:
         other_df = util.create_other_artifacts(checkpoint, directory_name = "artifacts")
-        util.save_to_csv(other_df, "top_level_artifacts.csv")
+        util.save_to_csv(other_df, "global_logs.csv")
     except:
         print("Error while trying to read global artifacts. Skipping...")
 
