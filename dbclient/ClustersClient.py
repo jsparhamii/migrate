@@ -47,10 +47,19 @@ class ClustersClient(dbclient):
         :return:
         """
         pool_id_dict = self.get_instance_pool_id_mapping()
-        # if pool id exists, remove instance types
-        cluster_json.pop('node_type_id', None)
-        cluster_json.pop('driver_node_type_id', None)
-        cluster_json.pop('enable_elastic_disk', None)
+
+        if not pool_id_dict:
+            logging.info("WARNING: instance pool is outdated. Pools may have been deleted; cluster will use defaults.")
+            cluster_json.pop("instance_pool_id")
+        else:
+            # if pool id exists, remove instance types
+            cluster_json.pop('node_type_id', None)
+            cluster_json.pop('driver_node_type_id', None)
+            cluster_json.pop('enable_elastic_disk', None)
+            # map old pool ids to new pool ids
+            old_pool_id = cluster_json['instance_pool_id']
+            cluster_json['instance_pool_id'] = pool_id_dict.get[old_pool_id]
+
         if not is_job_cluster:
             # add custom tag for original cluster creator for cost tracking
             if 'custom_tags' in cluster_json:
@@ -65,9 +74,7 @@ class ClustersClient(dbclient):
             iam_role = aws_conf.get('instance_profile_arn', None)
             if not iam_role:
                 cluster_json['aws_attributes'] = {'instance_profile_arn': iam_role}
-        # map old pool ids to new pool ids
-        old_pool_id = cluster_json['instance_pool_id']
-        cluster_json['instance_pool_id'] = pool_id_dict[old_pool_id]
+
         return cluster_json
 
     def delete_all_clusters(self):
@@ -462,8 +469,11 @@ class ClustersClient(dbclient):
                 if ip_arn not in list_of_profiles:
                     print("Importing arn: {0}".format(ip_arn))
                     resp = self.post('/instance-profiles/add', {'instance_profile_arn': ip_arn})
-                    if not logging_utils.log_response_error(error_logger, resp):
+                    if not logging_utils.check_error(resp):
                         import_profiles_count += 1
+                    else:
+                        logging.info(f"Failed instance profile import for {ip_arn}")
+                        logging_utils.log_response_error(error_logger, resp)
                 else:
                     logging.info("Skipping since profile already exists: {0}".format(ip_arn))
         return import_profiles_count
