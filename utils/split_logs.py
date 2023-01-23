@@ -38,7 +38,7 @@ class Split():
             for l in log:
                 f.write(json.dumps(l) + '\n')
 
-    def fix_acls(self, acls):
+    def fix_acls(self, acls, jobs=False):
         new_acls = []
         for permission in acls:
             if 'group_name' in permission.keys():
@@ -47,12 +47,19 @@ class Split():
             if 'user_name' in permission.keys():
                 if permission['user_name'] in self.imported_users:
                     new_acls.append(permission)
+                else:
+                    # user will get dropped
+                    if jobs:
+                        if permission['permission_level'] == 'IS_OWNER':
+                            print(f"Dropping Job Owner {permission['user_name']} from job. Add Job Owner to acl_jobs.log")
             if 'principal' in permission.keys():
                 if permission['principal'] in self.imported_users:
                     new_acls.append(permission)
             if 'display' in permission.keys():
                 if permission['display'] in self.imported_users:
                     new_acls.append(permission)
+
+
 
         return new_acls
 
@@ -232,6 +239,7 @@ class Split():
                     jobid = d['object_id'].split("/")[-1]
                     if int(jobid) in df['job_ids'].tolist():
                         data_write.append(d)
+                    print(f"Editing Job with Job ID: {jobid}")
                     if "access_control_list" in d.keys():
                         d['access_control_list'] = self.fix_acls(d['access_control_list'])
             except Exception as e:
