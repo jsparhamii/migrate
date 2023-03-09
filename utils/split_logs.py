@@ -103,7 +103,7 @@ class Split():
 
 
     def secret_scopes(self, df, file_name=None):
-        scopes = df["secret_scope_names"]
+        scopes = df["secret_scopes"]
         errors = {'Data':[], 'Error':[]}
         for scope in scopes:
             try:
@@ -387,7 +387,7 @@ class Split():
             try:
                 if "artifacts" not in os.listdir(self.new_path):
                     os.mkdir(self.new_path+'artifacts')
-                if "Shared" not in os.listdir(self.new_path+"artifacts/Shared/"):
+                if "Shared" not in os.listdir(self.new_path+"artifacts/"):
                     os.mkdir(self.new_path+'artifacts/Shared/')
                 new_folder_path = self.new_path+'artifacts/Shared/'+notebook
                 src_path = self.path+'artifacts/Shared/'+notebook
@@ -398,7 +398,7 @@ class Split():
         return errors
 
     def global_notebooks(self, df, file_name=None):
-        names = df['global_shared_folder_names']
+        names = df['global_folder_names']
         errors = {'Data':[], 'Error':[]}
         for notebook in names:
             try:
