@@ -38,7 +38,8 @@ class Workspace():
             'acl_directories':["users", split.acl_directories],
             'metastore': ["metastore", split.metastore],
             'success_metastore': ["metastore", split.success_metastore],
-            'table_acls':["metastore", split.table_acls]
+            'table_acls':["metastore", split.table_acls], 
+            "database_details": ["metastore", split.database_details]
         }
         print("-"*80)
         print(f"CREATING WORKSPACE {workspace}...")
@@ -59,7 +60,7 @@ class Workspace():
         """
         summary: copy files that need to be copied to all workspace folders
         """
-        total = ['app_logs', 'checkpoint', 'database_details.log', 'source_info.txt']
+        total = ['app_logs', 'checkpoint', 'source_info.txt']
         for w in self.workspaces:
             # don't copy the logs that were not in the csvs directory
             total_in_workspace = os.listdir("./logs/"+self.checkpoint+"_"+w)
@@ -109,7 +110,7 @@ class Workspace():
 
         if len(errors[0]) > 0:
             print(f"{datetime.now()}   There are errors. Please review error logs for {module}")
-
+        
         pd.DataFrame(errors).to_csv(self.new_path + 'errors/' + sheet_name + '.csv')
         # success should be 0
         return 0

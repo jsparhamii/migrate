@@ -528,7 +528,26 @@ class Split():
                     d = d.strip()
                     d = json.loads(d)
                     database = d['table'].split(".")[0]
-                    if len(df.loc[(df['metastore_database'] == database)]) > 0:
+                    if database in df['metastore_database'].tolist():
+                        data_write.append(d)
+            except Exception as e:
+                errors['Data'].append(d)
+                errors['Error'].append(e)
+        self.write_logs(data_write, file_name)
+        return 0
+    
+    def database_details(self, df, file_name="database_details.log"): 
+        data = self.read_log(file_name)
+        data_write = []
+        errors = {'Data':[], 'Error':[]}
+
+        for d in data:
+            try:
+                if len(d) != 0:
+                    d = d.strip()
+                    d = json.loads(d)
+                    database = d['Namespace Name']
+                    if database in df['metastore_database'].tolist():
                         data_write.append(d)
             except Exception as e:
                 errors['Data'].append(d)
