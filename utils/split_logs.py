@@ -126,7 +126,7 @@ class Split():
                 if len(d) != 0:
                     d = d.strip()
                     d = json.loads(d)
-                    if d['scope_name'] in df['secret_scope_names'].tolist():
+                    if d['scope_name'] in df['secret_scopes'].tolist():
                         data_write.append(d)
                     if "items" in d.keys():
                         d['items'] = self.fix_acls(d['items'])
