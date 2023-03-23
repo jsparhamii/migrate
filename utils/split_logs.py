@@ -127,9 +127,11 @@ class Split():
                     d = d.strip()
                     d = json.loads(d)
                     if d['scope_name'] in df['secret_scopes'].tolist():
-                        data_write.append(d)
-                    if "items" in d.keys():
+                        print(d['items'])
                         d['items'] = self.fix_acls(d['items'])
+                        print(d['items'])
+                        data_write.append(d)
+
             except Exception as e:
                 errors['Data'].append(d)
                 errors['Error'].append(e)
