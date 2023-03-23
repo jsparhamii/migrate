@@ -55,8 +55,8 @@ class Split():
             if 'principal' in permission.keys():
                 if permission['principal'] in self.imported_users:
                     new_acls.append(permission)
-            if 'display' in permission.keys():
-                if permission['display'] in self.imported_users:
+            if 'userName' in permission.keys():
+                if permission['userName'] in self.imported_users:
                     new_acls.append(permission)
 
 
