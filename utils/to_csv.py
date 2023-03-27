@@ -170,7 +170,7 @@ def create_jobs(data):
     return {'job_ids': job_ids, 'job_names': job_names, 'job_type':job_types, 'job_creator':job_owners }
 
 
-def create_shared_logs(checkpoint = "", directory_name = "artifacts/shared"):
+def create_shared_logs(checkpoint = "", directory_name = "artifacts/Shared"):
     shared_path = f"./logs/{checkpoint}/{directory_name}"
     notebooks = os.listdir(shared_path)
 

@@ -85,7 +85,7 @@ def main(checkpoint):
         scopes_df = util.create_scopes(checkpoint, directory_name = 'secret_scopes')
         util.save_to_csv(scopes_df, "secret_scopes.csv")
     except:
-        prnit("Error while trying to read secrets. Skipping...")
+        print("Error while trying to read secrets. Skipping...")
 
     # metastore
     try:

@@ -3,6 +3,7 @@ import os
 import shutil
 import pandas as pd
 import gzip
+from datetime import datetime
 
 class Split():
     def __init__(self, checkpoint, workspace):
@@ -21,9 +22,9 @@ class Split():
                 data = f.read().split("\n")
             return data
         except FileNotFoundError as e:
-            return print(f"File {file_name} not found. ")
+            return print(f"{datetime.now()}   Error: {file_name} not found. ")
         except Exception as e:
-            print(f"There was an error while reading {file_name}. ")
+            print(f"{datetime.now()}   Error: There was an unknown error reading {file_name}. ")
             #print(e)
             return ''
 
@@ -51,7 +52,7 @@ class Split():
                     # user will get dropped
                     if jobs:
                         if permission['permission_level'] == 'IS_OWNER':
-                            print(f"Dropping Job Owner {permission['user_name']} from job. Add Job Owner to acl_jobs.log")
+                            print(f"{datetime.now()}   Dropping Job Owner {permission['user_name']} from job. Add Job Owner to acl_jobs.log")
             if 'principal' in permission.keys():
                 if permission['principal'] in self.imported_users:
                     new_acls.append(permission)
@@ -127,9 +128,7 @@ class Split():
                     d = d.strip()
                     d = json.loads(d)
                     if d['scope_name'] in df['secret_scopes'].tolist():
-                        print(d['items'])
                         d['items'] = self.fix_acls(d['items'])
-                        print(d['items'])
                         data_write.append(d)
 
             except Exception as e:
@@ -241,7 +240,7 @@ class Split():
                     jobid = d['object_id'].split("/")[-1]
                     if int(jobid) in df['job_ids'].tolist():
                         data_write.append(d)
-                    print(f"Editing Job with Job ID: {jobid}")
+                    print(f"{datetime.now()}   - Editing Job with Job ID: {jobid}")
                     if "access_control_list" in d.keys():
                         d['access_control_list'] = self.fix_acls(d['access_control_list'])
             except Exception as e:
@@ -294,8 +293,6 @@ class Split():
             try:
                 if "groups" not in os.listdir(self.new_path):
                     os.mkdir(self.new_path + "groups/")
-                new_file_path = self.new_path + "groups/"
-                src_path = self.path + "groups/" + group
 
                 group_data = self.read_log("groups/" + group)
                 group_data_write = []
@@ -317,18 +314,19 @@ class Split():
     def user_dirs(self, df=None, file_name="user_dirs.log"):
         data_user = df
         user_names = data_user['userName'].tolist()
-        if "global_shared_logs" in os.listdir("./csv/"):
-            data_art = pd.read_csv('./csv/global_shared_logs.csv', index_col=0)
-            art_names = data_art['global_shared_folder_names'].tolist()
-        else:
+        try: 
+            data_art - pd.read_excel("asset_mapping.xlsx", sheet_name = "global_logs")
+            art_names = data_art['global_folder_names'].tolist()
+        except:
             data_art = []
             art_names = []
-        if "shared_logs" in os.listdir("./csv/"):
-            data_shared = pd.read_csv('./csv/shared_logs.csv', index_col=0)
+        try:
+            data_shared = pd.read_excel("asset_mapping.xlsx", sheet_name = "global_shared_logs")
             shared_names = data_shared['notebook_names'].tolist()
-        else:
+        except:
             data_shared = []
             shared_names = []
+
         data = self.read_log(file_name)
         user_paths=['/Users/'+ n for n in user_names]
         shared_paths=['/Shared/'+ n for n in shared_names]
@@ -352,16 +350,16 @@ class Split():
         data_user = df
         user_names = data_user['userName'].tolist()
 
-        if "global_shared_logs" in os.listdir("./csv/"):
-            data_art = pd.read_csv('csv/global_shared_logs.csv', index_col=0)
-            art_names = data_art['global_shared_folder_names'].tolist()
-        else:
+        try: 
+            data_art = pd.read_excel("asset_mapping.xlsx", sheet_name = "global_logs")
+            art_names = data_art['global_folder_names'].tolist()
+        except:
             data_art = []
             art_names = []
-        if "shared_logs" in os.listdir("./csv/"):
-            data_shared = pd.read_csv('csv/shared_logs.csv', index_col=0)
+        try:
+            data_shared = pd.read_excel("asset_mapping.xlsx", sheet_name = "global_shared_logs")
             shared_names = data_shared['notebook_names'].tolist()
-        else:
+        except:
             data_shared = []
             shared_names = []
         data = self.read_log(file_name)
@@ -434,18 +432,19 @@ class Split():
     def acl_notebooks(self, df, file_name="acl_notebooks.log"):
         data_user = df
         user_names = data_user['userName'].tolist()
-        if "global_shared_logs" in os.listdir("./csv/"):
-            data_art = pd.read_csv('csv/global_shared_logs.csv', index_col=0)
-            art_names = data_art['global_shared_folder_names'].tolist()
-        else:
+        try: 
+            data_art - pd.read_excel("asset_mapping.xlsx", sheet_name = "global_logs")
+            art_names = data_art['global_folder_names'].tolist()
+        except:
             data_art = []
             art_names = []
-        if "shared_logs" in os.listdir("./csv/"):
-            data_shared = pd.read_csv('csv/shared_logs.csv', index_col=0)
+        try:
+            data_shared = pd.read_excel("asset_mapping.xlsx", sheet_name = "global_shared_logs")
             shared_names = data_shared['notebook_names'].tolist()
-        else:
+        except:
             data_shared = []
             shared_names = []
+
         data = self.read_log(file_name)
         user_paths=['/Users/'+ n for n in user_names]
         shared_paths=['/Shared/'+ n for n in shared_names]
@@ -469,18 +468,19 @@ class Split():
     def acl_directories(self, df, file_name="acl_directories.log"):
         data_user = df
         user_names = data_user['userName'].tolist()
-        if "global_shared_logs" in os.listdir("./csv/"):
-            data_art = pd.read_csv('csv/global_shared_logs.csv', index_col=0)
-            art_names = data_art['global_shared_folder_names'].tolist()
-        else:
+        try: 
+            data_art - pd.read_excel("asset_mapping.xlsx", sheet_name = "global_logs")
+            art_names = data_art['global_folder_names'].tolist()
+        except:
             data_art = []
             art_names = []
-        if "shared_logs" in os.listdir("./csv/"):
-            data_shared = pd.read_csv('csv/shared_logs.csv', index_col=0)
+        try:
+            data_shared = pd.read_excel("asset_mapping.xlsx", sheet_name = "global_shared_logs")
             shared_names = data_shared['notebook_names'].tolist()
-        else:
+        except:
             data_shared = []
             shared_names = []
+
         data = self.read_log(file_name)
         user_paths=['/Users/'+ n for n in user_names]
         shared_paths=['/Shared/'+ n for n in shared_names]
