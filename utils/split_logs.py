@@ -59,9 +59,9 @@ class Split():
             if 'userName' in permission.keys():
                 if permission['userName'] in self.imported_users:
                     new_acls.append(permission)
-
-
-
+            if 'display' in permission.keys():
+                if permission['display'] in self.imported_groups:
+                    new_acls.append(permission)
         return new_acls
 
     def users(self, df, file_name="users.log"):
@@ -80,7 +80,7 @@ class Split():
             except Exception as e:
                 errors['Data'].append(d)
                 errors['Error'].append(e)
-
+        print(self.imported_users)
         self.write_logs(data_write, file_name)
         return errors
 
@@ -130,7 +130,6 @@ class Split():
                     if d['scope_name'] in df['secret_scopes'].tolist():
                         d['items'] = self.fix_acls(d['items'])
                         data_write.append(d)
-
             except Exception as e:
                 errors['Data'].append(d)
                 errors['Error'].append(e)
@@ -182,9 +181,9 @@ class Split():
                     d = json.loads(d)
                     cluster = d['object_id'].split("/")[-1]
                     if cluster in df['cluster_id'].tolist():
+                        if "access_control_list" in d.keys():
+                            d['access_control_list'] = self.fix_acls(d['access_control_list'])
                         data_write.append(d)
-                    if "access_control_list" in d.keys():
-                        d['access_control_list'] = self.fix_acls(d['access_control_list'])
             except Exception as e:
                 errors['Data'].append(d)
                 errors['Error'].append(e)
@@ -239,10 +238,10 @@ class Split():
                     d = json.loads(d)
                     jobid = d['object_id'].split("/")[-1]
                     if int(jobid) in df['job_ids'].tolist():
+                        print(f"{datetime.now()}   - Editing Job with Job ID: {jobid}")
+                        if "access_control_list" in d.keys():
+                            d['access_control_list'] = self.fix_acls(d['access_control_list'])
                         data_write.append(d)
-                    print(f"{datetime.now()}   - Editing Job with Job ID: {jobid}")
-                    if "access_control_list" in d.keys():
-                        d['access_control_list'] = self.fix_acls(d['access_control_list'])
             except Exception as e:
                 errors['Data'].append(d)
                 errors['Error'].append(e)
@@ -288,6 +287,7 @@ class Split():
     def groups(self, df, file_name=None):
         groups = df['group_name']
         errors = {'Data':[], 'Error':[]}
+        self.imported_groups = groups.tolist()
 
         for group in groups:
             try:
@@ -307,8 +307,6 @@ class Split():
             except Exception as e:
                 errors['Data'].append(group)
                 errors['Error'].append(e)
-        all_groups = os.listdir(self.path + "groups")
-        self.imported_groups = [g for g in all_groups if g in groups ]
         return errors
 
     def user_dirs(self, df=None, file_name="user_dirs.log"):
@@ -456,9 +454,9 @@ class Split():
                     d = json.loads(d)
                     path = str(d['path'])
                     if (path[1:].startswith(tuple(art_names)) or path.startswith(tuple(user_paths)) or path.startswith(tuple(shared_paths))):
+                        if "access_control_list" in d.keys():
+                            d['access_control_list'] = self.fix_acls(d['access_control_list'])
                         data_write.append(d)
-                    if "access_control_list" in d.keys():
-                        d['access_control_list'] = self.fix_acls(d['access_control_list'])
                 except Exception as e:
                     errors['Data'].append(d)
                     errors['Error'].append(e)
@@ -493,9 +491,9 @@ class Split():
                     d = json.loads(d)
                     path = str(d['path'])
                     if (path[1:].startswith(tuple(art_names)) or path.startswith(tuple(user_paths)) or path.startswith(tuple(shared_paths))):
+                        if "access_control_list" in d.keys():
+                            d['access_control_list'] = self.fix_acls(d['access_control_list'])
                         data_write.append(d)
-                    if "access_control_list" in d.keys():
-                        d['access_control_list'] = self.fix_acls(d['access_control_list'])
                 except Exception as e:
                     errors['Data'].append(d)
                     errors['Error'].append(e)
