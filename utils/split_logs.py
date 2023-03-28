@@ -22,9 +22,9 @@ class Split():
                 data = f.read().split("\n")
             return data
         except FileNotFoundError as e:
-            return print(f"{datetime.now()}   Error: {file_name} not found. ")
+            return print(f"{datetime.now()}  Error: {file_name} not found. ")
         except Exception as e:
-            print(f"{datetime.now()}   Error: There was an unknown error reading {file_name}. ")
+            print(f"{datetime.now()}  Error: There was an unknown error reading {file_name}. ")
             #print(e)
             return ''
 
@@ -52,7 +52,7 @@ class Split():
                     # user will get dropped
                     if jobs:
                         if permission['all_permissions'][0]['permission_level'] == 'IS_OWNER':
-                            print(f"{datetime.now()}   The user {permission['user_name']} owns a job. This job will not be added to the split log. Please change the owner or add the user in the asset mapping.")
+                            # print(f"{datetime.now()}   The user {permission['user_name']} owns a job. This job will not be added to the split log. Please change the owner or add the user in the asset mapping.")
                             return 0
             if 'principal' in permission.keys():
                 if permission['principal'] in self.imported_users:

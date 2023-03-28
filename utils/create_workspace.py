@@ -88,13 +88,13 @@ class Workspace():
                 # get the appropriate csv that matches it
                 sheet = self.map[m][0]
                 # split_csv performs the actual split and outputs all csvs that were not in the csv directory
+                print(f"{datetime.now()}  Working on {m}...")
                 success = self.split_csv(m, module_function, sheet)
-                if success==0: 
-                    print(f"{datetime.now()}   Successfully split {m}.")
-                else: 
-                    print(f"{datetime.now()}   Error during split {m}.")
+
             except Exception as e:
                 pass
+
+        print(f"{datetime.now()}  Please review error logs in the {self.new_path}errors/ directory to confirm successful split. ")
         return 0
 
     def split_csv(self, module, module_function, sheet_name):
@@ -111,7 +111,7 @@ class Workspace():
         
         er = pd.DataFrame(errors)
         if len(er) > 0: 
-            print(f"{datetime.now()}   There are {len(er)} errors. Please review error logs for {module}")
+            print(f"{datetime.now()}  WARNING: There are {len(er)} errors. Please review error logs for {module}")
             er.to_csv(self.new_path + 'errors/' + module + '.csv')
         # success should be 0
         return 0
