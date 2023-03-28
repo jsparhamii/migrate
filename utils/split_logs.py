@@ -462,7 +462,7 @@ class Split():
                 try:
                     d = json.loads(d)
                     path = str(d['path'])
-                    if (path[1:].startswith(tuple(art_names)) or path.startswith(tuple(user_paths)) or path.startswith(tuple(shared_paths))):
+                    if (path.startswith(tuple(art_names)) or path.startswith(tuple(user_paths)) or path.startswith(tuple(shared_paths))):
                         if "access_control_list" in d.keys():
                             d['access_control_list'] = self.fix_acls(d['access_control_list'])
                         data_write.append(d)
@@ -499,7 +499,7 @@ class Split():
                 try:
                     d = json.loads(d)
                     path = str(d['path'])
-                    if (path[1:].startswith(tuple(art_names)) or path.startswith(tuple(user_paths)) or path.startswith(tuple(shared_paths))):
+                    if (path.startswith(tuple(art_names)) or path.startswith(tuple(user_paths)) or path.startswith(tuple(shared_paths))):
                         if "access_control_list" in d.keys():
                             d['access_control_list'] = self.fix_acls(d['access_control_list'])
                         data_write.append(d)
