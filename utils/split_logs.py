@@ -6,12 +6,13 @@ import gzip
 from datetime import datetime
 
 class Split():
-    def __init__(self, checkpoint, workspace):
+    def __init__(self, checkpoint, workspace, default_owner=False):
         self.path = "./logs/"+checkpoint+"/"
         self.workspace = workspace
         self.new_path = "./logs/"+checkpoint+"_"+workspace+"/"
         self.imported_users = []
         self.imported_groups = ['admins', 'Users']
+        self.default_job_owner = default_owner
 
     def read_log(self, file_name):
         """
@@ -52,8 +53,12 @@ class Split():
                     # user will get dropped
                     if jobs:
                         if permission['all_permissions'][0]['permission_level'] == 'IS_OWNER':
-                            # print(f"{datetime.now()}   The user {permission['user_name']} owns a job. This job will not be added to the split log. Please change the owner or add the user in the asset mapping.")
-                            return 0
+                            if self.default_job_owner: 
+                                default_permission = {"user_name": self.default_job_owner, "all_permissions": [{"permission_level": "IS_OWNER", "inherited": False}]}
+                                new_acls.append(default_permission)
+                            else: 
+                                # print(f"{datetime.now()}   The user {permission['user_name']} owns a job. This job will not be added to the split log. Please change the owner or add the user in the asset mapping.")
+                                return 0
             if 'principal' in permission.keys():
                 if permission['principal'] in self.imported_users:
                     new_acls.append(permission)

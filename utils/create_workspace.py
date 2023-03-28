@@ -5,13 +5,13 @@ import pandas as pd
 from datetime import datetime
 
 class Workspace():
-    def __init__(self, checkpoint, workspace, all_workspaces):
+    def __init__(self, checkpoint, workspace, all_workspaces, default_owner=False):
         self.path = "./logs/"+checkpoint+"/"
         self.workspace = str(workspace)
         self.new_path = "./logs/"+checkpoint+"_"+workspace+"/"
         self.workspaces = all_workspaces
         self.checkpoint = checkpoint
-        split = Split(checkpoint, workspace)
+        split = Split(checkpoint, workspace, default_owner)
 
         # this is where all assets are mapped to what csv they refer to + what function they use for the split
         self.map = {
