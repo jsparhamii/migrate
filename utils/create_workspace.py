@@ -1,6 +1,5 @@
 from utils.split_logs import Split
 import os
-import json
 import shutil
 import pandas as pd
 from datetime import datetime
@@ -83,7 +82,6 @@ class Workspace():
         """
         # for each
         for m in self.map.keys():
-            print(f"{datetime.now()}   Starting to split {m}.")
             try:
                 # get the asset function that splits that asset
                 module_function = self.map[m][1]
@@ -91,6 +89,10 @@ class Workspace():
                 sheet = self.map[m][0]
                 # split_csv performs the actual split and outputs all csvs that were not in the csv directory
                 success = self.split_csv(m, module_function, sheet)
+                if success==0: 
+                    print(f"{datetime.now()}   Successfully split {m}.")
+                else: 
+                    print(f"{datetime.now()}   Error during split {m}.")
             except Exception as e:
                 pass
         return 0
@@ -100,17 +102,16 @@ class Workspace():
         # you can set that variable to True or 1 or anything else that the client is using
         # but it will ignore anything else
         df = pd.read_excel("asset_mapping.xlsx", sheet_name = sheet_name)
-        #df = pd.read_csv("./csv/"+csv, index_col=0)
         current_df = df[df[self.workspace] == "Y"]
         # send that subset dataframe to the module function found in Split class
         errors = module_function(current_df.reset_index())
         #pushing all errors to a csv
-        if 'errors' not in self.new_path:
+        if 'errors' not in os.listdir(self.new_path):
             os.mkdir(self.new_path + 'errors')
-
-        if len(errors[0]) > 0:
-            print(f"{datetime.now()}   There are errors. Please review error logs for {module}")
         
-        pd.DataFrame(errors).to_csv(self.new_path + 'errors/' + sheet_name + '.csv')
+        er = pd.DataFrame(errors)
+        if len(er) > 0: 
+            print(f"{datetime.now()}   There are {len(er)} errors. Please review error logs for {module}")
+            er.to_csv(self.new_path + 'errors/' + module + '.csv')
         # success should be 0
         return 0

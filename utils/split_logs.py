@@ -51,8 +51,9 @@ class Split():
                 else:
                     # user will get dropped
                     if jobs:
-                        if permission['permission_level'] == 'IS_OWNER':
-                            print(f"{datetime.now()}   Dropping Job Owner {permission['user_name']} from job. Add Job Owner to acl_jobs.log")
+                        if permission['all_permissions'][0]['permission_level'] == 'IS_OWNER':
+                            print(f"{datetime.now()}   The user {permission['user_name']} owns a job. This job will not be added to the split log. Please change the owner or add the user in the asset mapping.")
+                            return 0
             if 'principal' in permission.keys():
                 if permission['principal'] in self.imported_users:
                     new_acls.append(permission)
@@ -80,7 +81,6 @@ class Split():
             except Exception as e:
                 errors['Data'].append(d)
                 errors['Error'].append(e)
-        print(self.imported_users)
         self.write_logs(data_write, file_name)
         return errors
 
@@ -238,9 +238,13 @@ class Split():
                     d = json.loads(d)
                     jobid = d['object_id'].split("/")[-1]
                     if int(jobid) in df['job_ids'].tolist():
-                        print(f"{datetime.now()}   - Editing Job with Job ID: {jobid}")
+                        # print(f"{datetime.now()}   - Editing Job with Job ID: {jobid}")
                         if "access_control_list" in d.keys():
-                            d['access_control_list'] = self.fix_acls(d['access_control_list'])
+                            d['access_control_list'] = self.fix_acls(d['access_control_list'], jobs=True)
+                            if d['access_control_list'] == 0: 
+                                errors['Data'].append(jobid)
+                                errors['Error'].append("Job Owner is not tagged in the asset mapping.")
+                                continue
                         data_write.append(d)
             except Exception as e:
                 errors['Data'].append(d)
