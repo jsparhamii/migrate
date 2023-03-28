@@ -440,9 +440,10 @@ class Split():
         data_user = df
         user_names = data_user['userName'].tolist()
         try: 
-            data_art - pd.read_excel("asset_mapping.xlsx", sheet_name = "global_logs")
+            data_art = pd.read_excel("asset_mapping.xlsx", sheet_name = "global_logs")
             art_names = data_art['global_folder_names'].tolist()
-        except:
+        except Exception as e: 
+            print(e)
             data_art = []
             art_names = []
         try:
@@ -476,7 +477,7 @@ class Split():
         data_user = df
         user_names = data_user['userName'].tolist()
         try: 
-            data_art - pd.read_excel("asset_mapping.xlsx", sheet_name = "global_logs")
+            data_art = pd.read_excel("asset_mapping.xlsx", sheet_name = "global_logs")
             art_names = data_art['global_folder_names'].tolist()
         except:
             data_art = []
