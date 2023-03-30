@@ -57,7 +57,6 @@ class Split():
                                 default_permission = {"user_name": self.default_job_owner, "all_permissions": [{"permission_level": "IS_OWNER", "inherited": False}]}
                                 new_acls.append(default_permission)
                             else: 
-                                # print(f"{datetime.now()}   The user {permission['user_name']} owns a job. This job will not be added to the split log. Please change the owner or add the user in the asset mapping.")
                                 return 0
             if 'principal' in permission.keys():
                 if permission['principal'] in self.imported_users:
