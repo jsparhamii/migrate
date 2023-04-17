@@ -497,7 +497,10 @@ def get_pipeline_parser() -> argparse.ArgumentParser:
 
     parser.add_argument('--archive-missing', action='store_true',
                         help='Import all missing users into the top level /Archive/ directory.')
-
+    # Jobs arguments
+    parser.add_argument('--default-job-owner', action='store', default=False, 
+                        help='Set a default job owner for jobs without an owner.')
+    
     # Metastore arguments
     parser.add_argument('--repair-metastore-tables', action='store_true', default=False,
                         help='Repair legacy metastore tables')

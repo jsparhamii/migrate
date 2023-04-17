@@ -258,9 +258,9 @@ class JobsExportTask(AbstractTask):
         jobs_c = JobsClient(self.client_config, self.checkpoint_service)
 
         if self.client_config.get("groups_to_keep"):
-            jobs_c.log_job_configs(groups_list=self.client_config.get("groups_to_keep"))
+            jobs_c.log_job_configs(groups_list=self.client_config.get("groups_to_keep"), default_job_owner=self.args.default_job_owner)
         else:
-            jobs_c.log_job_configs()
+            jobs_c.log_job_configs(default_job_owner=self.args.default_job_owner)
 
 
 class JobsImportTask(AbstractTask):

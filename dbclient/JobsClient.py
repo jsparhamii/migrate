@@ -79,7 +79,7 @@ class JobsClient(ClustersClient):
             else:
                 raise RuntimeError("Import job has failed. Refer to the previous log messages to investigate.")
 
-    def log_job_configs(self, users_list=None, groups_list = None, log_file='jobs.log', acl_file='acl_jobs.log'):
+    def log_job_configs(self, users_list=None, groups_list = None, log_file='jobs.log', acl_file='acl_jobs.log', default_job_owner=False):
         """
         log all job configs and the ACLs for each job
         :param users_list: a list of users / emails to filter the results upon (optional for group exports)
@@ -131,6 +131,15 @@ class JobsClient(ClustersClient):
                             for permission in acl.get("all_permissions"):
                                 if permission.get("permission_level") == "IS_OWNER":
                                     valid_acl = True
+                    if not valid_acl and default_job_owner: 
+                        default_owner_permission = {"user_name": default_job_owner, "all_permissions": [{"permission_level": "IS_OWNER", "inherited": False}]} 
+                        acls.append(default_owner_permission)
+                        # re check if ACL is valid
+                        for acl in acls:
+                            for permission in acl.get("all_permissions"):
+                                if permission.get("permission_level") == "IS_OWNER":
+                                    valid_acl = True
+
                     if valid_acl:
                         # job and job_acl are fine, writing both to the output files
                         log_fp.write(json.dumps(x) + '\n')
