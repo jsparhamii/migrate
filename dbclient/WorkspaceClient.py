@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import re
 
 from dbclient import *
@@ -358,10 +359,17 @@ class WorkspaceClient(dbclient):
             save_path = export_dir[:-1] + nb_path + '/'
         else:
             save_path = export_dir
-        save_filename = save_path + os.path.basename(notebook_path) + '.' + resp.get('file_type')
+
         # If the local path doesn't exist,we create it before we save the contents
         if not os.path.exists(save_path) and save_path:
             os.makedirs(save_path, exist_ok=True)
+
+        save_filename = save_path + os.path.basename(notebook_path) + '.' + resp.get('file_type')
+        if os.path.isfile(save_filename):
+            logging.warning(f"Notebook file {save_filename} already exists; please rename in source workspace. "
+                            f"Note that files are case-insensitive")
+            return {}
+
         with open(save_filename, "wb") as f:
             f.write(base64.b64decode(resp['content']))
         checkpoint_notebook_set.write(notebook_path)
@@ -647,13 +655,19 @@ class WorkspaceClient(dbclient):
                     logging.info(f"User workspace does not exist: {obj_path}, skipping ACL")
                     return
             obj_status = self.get(WS_STATUS, {'path': obj_path})
+
+            if self.is_repo(obj_path):
+                if logging_utils.check_error(obj_status):
+                    logging.warning(f"Could not apply ACL to repo {obj_path}")
+                    return
+
             if logging_utils.log_response_error(error_logger, obj_status):
                 return
             logging.info("ws-stat: ", obj_status)
             current_obj_id = obj_status.get('object_id', None)
             if not current_obj_id:
-                error_logger.error(f'Object id missing from destination workspace: {obj_status}')
-                return
+                    error_logger.error(f'Object id missing from destination workspace: {obj_status}')
+                    return
             if object_type == 'directory':
                 object_id_with_type = f'/directories/{current_obj_id}'
             elif object_type == 'notebook':
@@ -806,14 +820,13 @@ class WorkspaceClient(dbclient):
                                                       self.get_export_dir())
         
         # Given previous exported artifacts, a list of changed and newly added notebooks will be logged at notebook_changes.log
-        nb_changes_log = os.path.join(self.get_export_dir(), "notebook_changes.log")
         changes_since_last = set()
         if last_session:
+            nb_changes_log = os.path.join(self.get_export_dir(), "notebook_changes.log")
             base_dir = os.path.split(os.path.normpath(self.get_export_dir()))[0]
             last_src_dir = os.path.join(base_dir, last_session, artifact_dir)
-            with open(nb_changes_log, "w") as fp:
-                log_updated_new_files(last_src_dir, src_dir, fp)
-            changes_since_last = read_file_changes(nb_changes_log)
+            changes_since_last = get_updated_new_files(last_src_dir, src_dir)
+            log_file_changes(changes_since_last, nb_changes_log)
 
         checkpoint_notebook_set = self._checkpoint_service.get_checkpoint_key_set(
             wmconstants.WM_IMPORT, wmconstants.WORKSPACE_NOTEBOOK_OBJECT)
