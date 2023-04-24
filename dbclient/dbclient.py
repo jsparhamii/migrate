@@ -425,7 +425,8 @@ class dbclient:
         logs_to_update = ['users.log',
                           'acl_jobs.log',
                           'acl_clusters.log', 'acl_cluster_policies.log',
-                          'acl_notebooks.log', 'acl_directories.log']
+                          'acl_notebooks.log', 'acl_directories.log', 
+                          'secret_scopes_acls.log']
         for logfile in logs_to_update:
             if os.path.exists(log_dir + logfile):
                 self.replace_file_contents(old_email_address, new_email_address, logfile)
