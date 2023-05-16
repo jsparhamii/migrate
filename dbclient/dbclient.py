@@ -422,7 +422,8 @@ class dbclient:
         :return:
         """
         log_dir = self.get_export_dir()
-        logs_to_update = ['users.log',
+        logs_to_update = ['users.log', 
+                          'jobs.log', 
                           'acl_jobs.log',
                           'acl_clusters.log', 'acl_cluster_policies.log',
                           'acl_notebooks.log', 'acl_directories.log', 
