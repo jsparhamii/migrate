@@ -10,12 +10,14 @@ def main():
     all_args.add_argument("--checkpoint", dest="checkpoint", default="", help="set if you are using a checkpoint during export")
     all_args.add_argument("--workspaces", dest="workspaces", nargs="+", required=True, help="list of workspace names. must match columns in asset_mapping.xslx.")
     all_args.add_argument('--default-job-owner', dest="default_job_owner", default=False, help="set if you want to add a job owner to jobs that drop untagged owners.")
+    all_args.add_argument('--tag', dest="tag", default='Y', help="tag used in asset_mapping.xslx.")
+    
     args = all_args.parse_args()
 
     checkpoint = args.checkpoint
     workspaces = args.workspaces
     default_owner = args.default_job_owner
-
+    tag = args.tag
 
     # for each workspace
     for w in workspaces:
@@ -23,7 +25,7 @@ def main():
         # this instantiates the original location of the session and the new location of the session
         # it also instantiates another class Split - refer to split_logs.py
         # Split instantiates the same thing as well as two variables: imported users and imported groups (this is used for remaking ACLs)
-        workspace = Workspace(checkpoint, w, workspaces, default_owner)
+        workspace = Workspace(checkpoint, w, workspaces, default_owner, tag)
         success = workspace.run()
 
     workspace.copy_other_files()

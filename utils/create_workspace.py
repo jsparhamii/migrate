@@ -5,12 +5,13 @@ import pandas as pd
 from datetime import datetime
 
 class Workspace():
-    def __init__(self, checkpoint, workspace, all_workspaces, default_owner=False):
+    def __init__(self, checkpoint, workspace, all_workspaces, default_owner=False, tag='Y'):
         self.path = "./logs/"+checkpoint+"/"
         self.workspace = str(workspace)
         self.new_path = "./logs/"+checkpoint+"_"+workspace+"/"
         self.workspaces = all_workspaces
         self.checkpoint = checkpoint
+        self.tag = tag
         split = Split(checkpoint, workspace, default_owner)
 
         # this is where all assets are mapped to what csv they refer to + what function they use for the split
@@ -89,7 +90,7 @@ class Workspace():
                 sheet = self.map[m][0]
                 # split_csv performs the actual split and outputs all csvs that were not in the csv directory
                 print(f"{datetime.now()}  Working on {m}...")
-                success = self.split_csv(m, module_function, sheet)
+                success = self.split_csv(m, module_function, sheet, self.tag)
 
             except Exception as e:
                 pass
@@ -97,12 +98,12 @@ class Workspace():
         print(f"{datetime.now()}  Please review error logs in the {self.new_path}errors/ directory to confirm successful split. ")
         return 0
 
-    def split_csv(self, module, module_function, sheet_name):
+    def split_csv(self, module, module_function, sheet_name, tag="Y"):
         # reads csv and inputs attribute columns where the workspace column is set to Y
         # you can set that variable to True or 1 or anything else that the client is using
         # but it will ignore anything else
         df = pd.read_excel("asset_mapping.xlsx", sheet_name = sheet_name)
-        current_df = df[df[self.workspace] == "Y"]
+        current_df = df[df[self.workspace] == tag]
         # send that subset dataframe to the module function found in Split class
         errors = module_function(current_df.reset_index())
         #pushing all errors to a csv
