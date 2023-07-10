@@ -48,6 +48,14 @@ def main(checkpoint, destination="csv"):
         clusters_df = util.create_clusters(clusters_data)
         util.save_to_csv(clusters_df, "clusters.csv", destination)
     
+    # cluster policies 
+    cluster_policies_data = util.read_log('cluster_policies.log', checkpoint)
+    if cluster_policies_data == 1: #file not found
+        print("cluster_policies.log not found in checkpoint session. Skipping... ")
+    else:
+        clusters_policies_df = util.create_cluster_policies(cluster_policies_data)
+        util.save_to_csv(clusters_policies_df, "cluster_policies.csv", destination)
+        
     # job
     jobs_data = util.read_log('jobs.log', checkpoint)  
     if jobs_data == 1: #file not found
@@ -82,7 +90,7 @@ def main(checkpoint, destination="csv"):
     util.save_to_csv(metastore_df, "metastore.csv", destination)
 
     create_spreadsheet.csv_to_excel(f"./{destination}")
-    print("Sucessfully created spreadsheet asset_mapping.xlsx. ")
+    print("Successfully created spreadsheet asset_mapping.xlsx. ")
 
 if __name__ == "__main__":
 

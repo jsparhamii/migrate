@@ -151,6 +151,21 @@ def create_clusters(data):
 
     return {'cluster_id': cluster_id, 'cluster_name': cluster_name, 'creator_user_name': creator_user_name, 'policy_id': policy_id, 'instance_profile': instance_profile}
 
+def create_cluster_policies(data):
+    policy_id = []
+    policy_name = []
+
+    for d in data:
+        try:
+            d = json.loads(d)
+            policy_id.append(d['policy_id'])
+            policy_name.append(d['name'])
+        except Exception as e:
+            print("Error in creating cluster policies...")
+
+    return {'policy_id': policy_id, 'policy_name': policy_name}
+
+
 def create_jobs(data, jobs_acls):
     job_ids = []
     job_names = []
