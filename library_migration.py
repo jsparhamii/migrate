@@ -157,7 +157,7 @@ def main():
     print(f"{datetime.now()} EXPORTING LIBRARIES... ")
     libraries_data, no_libraries = export_pipeline(old_dbclient, new_dbclient)
     print()
-    confirm = input(f"Import from? (y/N) ")
+    confirm = input(f"Import? (y/N) ")
     if confirm.lower() in ["y", "yes"]:
         print(f"{datetime.now()} IMPORTING LIBRARIES... ")
         import_pipeline(new_dbclient, libraries_data)
