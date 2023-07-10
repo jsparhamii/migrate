@@ -10,14 +10,14 @@ def read_log(file_name, checkpoint):
         return data[:-1]
 
     except FileNotFoundError as e:
-        return ''
+        return 1
     except Exception as e:
         print(f"Error while reading {file_name}...")
         return ''
 
-def save_to_csv(data, file_name):
+def save_to_csv(data, file_name, destination):
     try:
-        pd.DataFrame.from_dict(data).to_csv("./csv/" + file_name)
+        pd.DataFrame.from_dict(data).to_csv(f"./{destination}/{file_name}")
     except:
         print(f"Error while writing {file_name}...")
 
@@ -73,13 +73,12 @@ def read_group(group_path):
             data = f.read().split("\n")
         return data
     except FileNotFoundError as e:
-        return ''
+        return 1
     except Exception as e:
-        print(f"Error while reading {group_path}...")
-        print(e)
-        return ''
+        print(f"Error while reading group at path {group_path}: {e}")
+        return 2
 
-def create_groups(checkpoint = "", directory_name = "groups"):
+def create_groups(directory_name = "groups", checkpoint = ""):
     groups_path = f"./logs/{checkpoint}/{directory_name}/"
     groups_dir = os.listdir(groups_path)
     groups = {}
@@ -90,24 +89,26 @@ def create_groups(checkpoint = "", directory_name = "groups"):
         group_users = []
 
         data = read_group(groups_path + g)
+        if data == 1: # group not found
+            print(f"Group {g} not found in the checkpoint. Skipping...")
+            continue # to next group
+        if data == 2: # unknown error
+            continue
         data = data[0]
         d = json.loads(data)
         group_name = d['displayName']
 
-        try:
+        if 'roles' in d.keys():
             roles = d['roles']
             for role in roles:
                 group_roles.append(role['value'])
-        except:
-            pass
 
-        try:
+        if 'members' in d.keys(): 
             members = d['members']
             for member in members:
-                group_members.append(member['display'])
-                group_users.append(member['userName'])
-        except:
-            pass
+                group_members.append(member.get('display', 'display not found'))
+                group_users.append(member.get('userName', 'userName not found'))
+
 
         groups[group_name] = [group_roles, group_members, group_users]
     results = {}
@@ -179,33 +180,42 @@ def create_jobs(data, jobs_acls):
         except Exception as e:
             print("Error in creating jobs...")
 
-    for a in jobs_acls:
-        try:
-            a = json.loads(a)
-            for j in a['access_control_list']:
-                if j.get('user_name', None) != None:
-                    if j['all_permissions'][0]['permission_level'] == 'IS_OWNER':
-                        job_owners.append(j['user_name'])
-        except:
-            job_owners.append('')
+    if jobs_acls != 1: # if it was found in the session
+        for a in jobs_acls:
+            try:
+                a = json.loads(a)
+                for j in a['access_control_list']:
+                    if j.get('user_name', None) != None:
+                        if j['all_permissions'][0]['permission_level'] == 'IS_OWNER':
+                            job_owners.append(j['user_name'])
+            except:
+                job_owners.append('')
 
     return {'job_ids': job_ids, 'job_names': job_names, 'job_type':job_types, 'job_creator':job_creators, 'job_owner': job_owners, 'instance_profile': instance_profile}
 
 
-def create_shared_logs(checkpoint = "", directory_name = "artifacts/Shared"):
+def create_shared_logs(directory_name = "artifacts/Shared", checkpoint = ""):
     shared_path = f"./logs/{checkpoint}/{directory_name}"
-    notebooks = os.listdir(shared_path)
-
+    try: 
+        notebooks = os.listdir(shared_path)
+    except: 
+        notebooks = []
+    if not notebooks: 
+        print("Shared directory not found in checkpoint session. Skipping...")
     return {"notebook_names" : notebooks}
 
-def create_other_artifacts(checkpoint = "", directory_name = "artifacts"):
+def create_other_artifacts(directory_name = "artifacts", checkpoint = ""):
     other_path = f"./logs/{checkpoint}/{directory_name}"
-    notebooks = os.listdir(other_path)
-    if "Users" in notebooks:
-        notebooks.remove("Users")
-    if "Shared" in notebooks:
-        notebooks.remove("Shared")
-
+    try: 
+        notebooks = os.listdir(other_path)      
+        if "Users" in notebooks:
+            notebooks.remove("Users")
+        if "Shared" in notebooks:
+            notebooks.remove("Shared")
+    except: 
+        notebooks = []
+    if not notebooks: 
+        print("Top level folders not found in checkpoint session. Skipping...")
     return {"global_folder_names" : notebooks}
 
 def create_libraries(data):
@@ -213,21 +223,18 @@ def create_libraries(data):
     library_names = []
     for d in data:
         if len(d) > 0:
-            try:
-                d = json.loads(d)
-                library_paths.append(d['path'])
-                library_names.append(d['path'].split("/")[-1])
-            except Exception as e:
-                print("Error in creating libraries...")
+            d = json.loads(d)
+            library_paths.append(d['path'])
+            library_names.append(d['path'].split("/")[-1])
 
     return {'library_paths': library_paths, 'library_names': library_names}
 
-def create_scopes(checkpoint = "", directory_name = "secret_scopes"):
+def create_scopes(directory_name = "secret_scopes", checkpoint = ""):
     try:
         secrets = os.listdir(f"./logs/{checkpoint}/{directory_name}/")
         return {"secret_scopes" : secrets}
     except:
-        print("Error while reading secrets directory...")
+        print("secret scopes directory not found in checkpoint session. Skipping...")
 
 def create_mounts(data):
     mount_paths = []
@@ -246,6 +253,15 @@ def create_mounts(data):
 
 def create_metastore(checkpoint = "", directory_name = 'metastore'):
     metastore_path = f"./logs/{checkpoint}/{directory_name}"
-    metastore_database = [i for i in os.listdir(metastore_path)]
-
-    return {'metastore_database' : metastore_database}
+    try: 
+        metastore_database = [i for i in os.listdir(metastore_path)]
+    except: 
+        print("metastore directory not found in checkpoint session. Skipping...")
+        return   
+    tables = []
+    for db in metastore_database: 
+        db_path = metastore_path + '/' + db
+        metastore_tables = [(db, tb) for tb in os.listdir(db_path)]
+        tables.extend(metastore_tables)
+        
+    return {'metastore' : tables}
