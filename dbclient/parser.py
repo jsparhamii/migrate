@@ -390,6 +390,9 @@ def get_import_parser():
 
     parser.add_argument('--retry-backoff', type=float, default=1.0, help='Backoff factor to apply between retry attempts when making calls to Databricks API')
 
+    parser.add_argument('--sort-views', action='store_true', default=False,
+                        help='If True, the views will be sorted based upon dependencies before importing.')
+
     return parser
 
 
@@ -426,8 +429,8 @@ def build_client_config(profile, url, token, args):
               'skip_failed': args.skip_failed,
               'debug': args.debug,
               'file_format': str(args.notebook_format), 
-              'timeout':args.timeout, 
-              'skip_missing_users':args.skip_missing_users
+              'timeout': args.timeout,
+              'skip_missing_users': args.skip_missing_users
               }
     # this option only exists during imports so we check for existence
     if 'overwrite_notebooks' in args:
@@ -570,5 +573,14 @@ def get_pipeline_parser() -> argparse.ArgumentParser:
 
     parser.add_argument('--last-session', action='store', default='',
                         help='If set, the script compares current sesssion with the last session and only import updated and new notebooks.')
+
+    parser.add_argument('--sort-views', action='store_true', default=False,
+                        help='If True, the views will be sorted based upon dependencies before importing.')
+
+    parser.add_argument('--skip-large-nb', action='store_true', default=False,
+                        help='Skip notebooks larger than 10485760 bytes; these otherwise cause an error')
+
+    parser.add_argument('--hipaa', action='store_true', default=False,
+                        help='User HIPAA-compatible cluster profiles')
 
     return parser
