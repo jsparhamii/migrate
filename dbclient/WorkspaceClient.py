@@ -480,7 +480,6 @@ class WorkspaceClient(dbclient):
                         if self.is_verbose():
                             logging.info("Skipped notebook path due to group exclusion: {0}".format(x.get('path')))
                         continue
-
                 if not checkpoint_set.contains(nb_path) and not nb_path.startswith(tuple(exclude_prefixes)):
                     if self.is_verbose():
                         logging.info("Saving path: {0}".format(x.get('path')))
@@ -528,7 +527,7 @@ class WorkspaceClient(dbclient):
                             if self.is_verbose():
                                 logging.info("Skipped directory due to group exclusion: {0}".format(dir_path))
                             continue
-
+                    
                     if not checkpoint_set.contains(dir_path) and not dir_path.startswith(tuple(exclude_prefixes)):
                         num_nbs_plus = _recurse_log_all_workspace_items(folder)
                         checkpoint_set.write(dir_path)
@@ -583,6 +582,15 @@ class WorkspaceClient(dbclient):
                 futures = [executor.submit(_acl_log_helper, json_data) for json_data in read_fp]
                 concurrent.futures.wait(futures, return_when="FIRST_EXCEPTION")
                 propagate_exceptions(futures)
+    
+    def get_users_groups_target(self):
+        users = self.get('/preview/scim/v2/Users?attributes=userName').get('Resources', [])
+        groups = self.get('/preview/scim/v2/Groups').get('Resources', [])
+
+        users = [i['userName'] for i in users]
+        groups = [i['displayName'] for i in groups]
+
+        return (users, groups)
 
     def log_all_workspace_acls(self, workspace_log_file='user_workspace.log',
                                dir_log_file='user_dirs.log',
@@ -632,6 +640,26 @@ class WorkspaceClient(dbclient):
         end = timer()
         logging.info("Complete Repo ACLs Export Time: " + str(timedelta(seconds=end - start)))
 
+    def fix_acls(self, acl, groups_target, users_target): 
+        new_acls = []
+        for permission in acl: 
+            try: 
+                group_name = permission.get('group_name', None)
+                user_name = permission.get('user_name', None)
+                if group_name != None and group_name in groups_target:
+                    new_acls.append(permission)
+                elif user_name != None and user_name in users_target:
+                    new_acls.append(permission)
+                elif group_name != None and group_name not in groups_target:
+                    logging.error(f"Group name {group_name} not found in target workspace, removing ACLs {permission}")
+                elif user_name != None and user_name not in users_target:
+                    logging.error(f"User name {user_name} not found in target workspace, removing ACLs {permission}")
+                else:
+                    logging.error(f"User name {user_name} or group name {group_name} has errors for ACLs {permission}")
+            except Exception as e: 
+                logging.error(f"Failed at filtering permissions: {str(e)}")
+        return new_acls 
+
     def apply_acl_on_object(self, acl_str, error_logger, checkpoint_key_set):
         """
         apply the acl definition to the workspace object
@@ -645,7 +673,7 @@ class WorkspaceClient(dbclient):
         object_type = object_acl.get('object_type', None)
         obj_path = object_acl['path']
         logging.info(f"Working on ACL for path: {obj_path}")
-
+        users_target, groups_target = self.get_users_groups_target()
         if not checkpoint_key_set.contains(obj_path):
             # We cannot modify '/Shared' directory's ACL
             if obj_path == "/Shared" and object_type == "directory":
@@ -683,6 +711,7 @@ class WorkspaceClient(dbclient):
             acl_list = object_acl.get('access_control_list', None)
             access_control_list = self.build_acl_args(acl_list)
             if access_control_list:
+                access_control_list = self.fix_acls(access_control_list, groups_target, users_target)
                 api_args = {'access_control_list': access_control_list}
                 resp = self.patch(api_path, api_args)
 
