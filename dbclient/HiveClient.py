@@ -407,6 +407,7 @@ class HiveClient(ClustersClient):
                         if not self.move_table_view(db_name, tbl_name, local_table_ddl):
                             # we hit a table ddl here, so we apply the ddl
                             resp = self.apply_table_ddl(local_table_ddl, ec_id, cid, db_path, has_unicode)
+                            resp['table'] = db_name + "." + tbl_name
                             if not logging_utils.log_response_error(error_logger, resp):
                                 checkpoint_metastore_set.write(full_table_name)
                         else:
