@@ -276,8 +276,8 @@ def create_metastore(checkpoint = "", directory_name = 'metastore'):
     tables = []
     for db in metastore_database: 
         db_path = metastore_path + '/' + db
-        metastore_tables = [(db, tb) for tb in os.listdir(db_path)]
+        metastore_tables = [(db, tb, db+"."+tb) for tb in os.listdir(db_path)]
         tables.extend(metastore_tables)
         
-    dbs, tbs = zip(*tables)
-    return {'databases' : dbs, "tables": tbs}
+    dbs, tbs, both = zip(*tables)
+    return {'databases' : dbs, "tables": tbs, "name": both}
