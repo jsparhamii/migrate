@@ -30,6 +30,9 @@ class WorkspaceClient(dbclient):
         self.groups_to_keep = configs.get("groups_to_keep", False)
         self.skip_missing_users = configs['skip_missing_users']
         self.skip_large_nb = configs['skip_large_nb']
+        self.get_user_group = False
+        self.users_target = []
+        self.groups_target = []
 
     _languages = {'.py': 'PYTHON',
                   '.scala': 'SCALA',
@@ -673,7 +676,14 @@ class WorkspaceClient(dbclient):
         object_type = object_acl.get('object_type', None)
         obj_path = object_acl['path']
         logging.info(f"Working on ACL for path: {obj_path}")
-        users_target, groups_target = self.get_users_groups_target()
+
+        if not self.get_user_group:
+            logging.info(f"self.get_user_group: {self.get_user_group}")
+            users_target, groups_target = self.get_users_groups_target()
+            self.users_target = users_target
+            self.groups_target = groups_target
+            self.get_user_group = True
+            
         if not checkpoint_key_set.contains(obj_path):
             # We cannot modify '/Shared' directory's ACL
             if obj_path == "/Shared" and object_type == "directory":
@@ -711,7 +721,7 @@ class WorkspaceClient(dbclient):
             acl_list = object_acl.get('access_control_list', None)
             access_control_list = self.build_acl_args(acl_list)
             if access_control_list:
-                access_control_list = self.fix_acls(access_control_list, groups_target, users_target)
+                access_control_list = self.fix_acls(access_control_list, self.groups_target, self.users_target)
                 api_args = {'access_control_list': access_control_list}
                 resp = self.patch(api_path, api_args)
 
