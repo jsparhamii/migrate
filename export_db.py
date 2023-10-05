@@ -227,7 +227,12 @@ def main():
         start = timer()
         client = dbclient(client_config)
         #parse list list of e-mail mapping pairs. Format is:  old1@email.com:new1@e-mail.com,old2email.com:new2@email.com
-        emailpairs = args.replace_email.split(',')
+        if args.replace_email == "ALL_LOWERCASE":
+            scim_c = ScimClient(client_config, checkpoint_service)
+            old_emails = scim_c.get_users_from_log()
+            emailpairs = [old_email + ":" + old_email.lower() for old_email in old_emails]
+        else:
+            emailpairs = args.replace_email.split(',')
         print(str(len(emailpairs)) +' emails found to replace')
         for emailpair in emailpairs:
             if len(emailpair.split(':')) < 2:
