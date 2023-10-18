@@ -273,7 +273,7 @@ def create_mounts(data):
 def create_metastore(checkpoint = "", directory_name = 'metastore'):
     metastore_path = f"./logs/{checkpoint}/{directory_name}"
     try: 
-        metastore_database = [i for i in os.listdir(metastore_path)]
+        metastore_database = [i for i in os.listdir(metastore_path) if i != ".DS_Store"]
     except: 
         print("metastore directory not found in checkpoint session. Skipping...")
         return   
