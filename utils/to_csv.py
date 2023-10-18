@@ -82,6 +82,7 @@ def create_groups(directory_name = "groups", checkpoint = ""):
     try:
         groups_path = f"./logs/{checkpoint}/{directory_name}/"
         groups_dir = os.listdir(groups_path)
+        groups = {}
     except Exception as e:
         print(str(e))
         return {'group_name': [], 'group_roles': [], 'group_members': [], 'group_users': [] }
