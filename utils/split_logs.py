@@ -509,18 +509,25 @@ class Split():
         self.write_logs(data_write, file_name)
         return errors
 
-    def metastore(self, df, file_name=None):
+    def metastore(self, df, file_name=None, split_tables=False):
         databases = os.listdir(self.path + "metastore/")
         errors = {'Data':[], 'Error':[]}
-
-        for db in df['metastore_database']:
-            try:
+        for dbtb in df['both'].tolist(): 
+            try: 
+                db = dbtb.split(".")[0]
                 if "metastore" not in os.listdir(self.new_path):
                     os.mkdir(self.new_path+"metastore/")
                 new_folder_path = self.new_path+"metastore/"+db
                 src_path = self.path+"metastore/"+db
-                if db not in os.listdir(self.new_path+"metastore/"):
-                    shutil.copytree(src_path, new_folder_path)
+                if split_tables: 
+                    tb = dbtb.split(".")[1]
+                    new_file_path = new_folder_path + "/" + tb
+                    src_file_path = src_path + "/" + tb
+                    if tb not in os.listdir(new_folder_path): 
+                        shutil.copyfile(src_file_path, new_file_path)
+                else: 
+                    if db not in os.listdir(self.new_path+"metastore/"):
+                        shutil.copytree(src_path, new_folder_path)
             except Exception as e:
                 errors['Data'].append(db)
                 errors['Error'].append(e)
@@ -537,7 +544,7 @@ class Split():
                     d = d.strip()
                     d = json.loads(d)
                     database = d['table'].split(".")[0]
-                    if database in df['metastore_database'].tolist():
+                    if database in df['databases'].tolist():
                         data_write.append(d)
             except Exception as e:
                 errors['Data'].append(d)
@@ -556,7 +563,7 @@ class Split():
                     d = d.strip()
                     d = json.loads(d)
                     database = d['Namespace Name']
-                    if database in df['metastore_database'].tolist():
+                    if database in df['databases'].tolist():
                         data_write.append(d)
             except Exception as e:
                 errors['Data'].append(d)
@@ -576,7 +583,7 @@ class Split():
                 if len(d) != 0:
                     d = d.strip()
                     d = json.loads(d)
-                    if len(df.loc[(df['metastore_database'] == d['Database'])]) > 0:
+                    if len(df.loc[(df['databases'] == d['Database'])]) > 0:
                         data_write.append(d)
             except Exception as e:
                 errors['Data'].append(d)
