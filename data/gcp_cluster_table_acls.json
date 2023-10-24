@@ -1,5 +1,5 @@
 {
-  "cluster_name": "API_Table_ACL_Work_Leave_Me_Alone",
+  "cluster_name": "E2_Migration_Table_ACLs",
   "spark_version": "10.4.x-scala2.12",
   "spark_conf": {
     "spark.databricks.cluster.profile": "serverless",

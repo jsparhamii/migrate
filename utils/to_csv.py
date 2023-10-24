@@ -79,13 +79,12 @@ def read_group(group_path):
         return 2
 
 def create_groups(directory_name = "groups", checkpoint = ""):
-    try:
-        groups_path = f"./logs/{checkpoint}/{directory_name}/"
-        groups_dir = os.listdir(groups_path)
-        groups = {}
-    except Exception as e:
-        print(str(e))
-        return {'group_name': [], 'group_roles': [], 'group_members': [], 'group_users': [] }
+    if directory_name not in os.listdir(f"./logs/{checkpoint}/"):
+        return 1
+
+    groups_path = f"./logs/{checkpoint}/{directory_name}/"
+    groups_dir = os.listdir(groups_path)
+    groups = {}
 
     for g in groups_dir:
         group_roles = []
@@ -214,27 +213,21 @@ def create_jobs(data, jobs_acls):
 
 
 def create_shared_logs(directory_name = "artifacts/Shared", checkpoint = ""):
+    if directory_name not in os.listdir(f"./logs/{checkpoint}/"):
+        return 1
     shared_path = f"./logs/{checkpoint}/{directory_name}"
-    try: 
-        notebooks = os.listdir(shared_path)
-    except: 
-        notebooks = []
-    if not notebooks: 
-        print("Shared directory not found in checkpoint session. Skipping...")
+    notebooks = os.listdir(shared_path)
     return {"notebook_names" : notebooks}
 
 def create_other_artifacts(directory_name = "artifacts", checkpoint = ""):
+    if directory_name not in os.listdir(f"./logs/{checkpoint}/"):
+        return 1
     other_path = f"./logs/{checkpoint}/{directory_name}"
-    try: 
-        notebooks = os.listdir(other_path)      
-        if "Users" in notebooks:
-            notebooks.remove("Users")
-        if "Shared" in notebooks:
-            notebooks.remove("Shared")
-    except: 
-        notebooks = []
-    if not notebooks: 
-        print("Top level folders not found in checkpoint session. Skipping...")
+    notebooks = os.listdir(other_path)      
+    if "Users" in notebooks:
+        notebooks.remove("Users")
+    if "Shared" in notebooks:
+        notebooks.remove("Shared")
     return {"global_folder_names" : notebooks}
 
 def create_libraries(data):
@@ -245,20 +238,17 @@ def create_libraries(data):
             d = json.loads(d)
             library_paths.append(d['path'])
             library_names.append(d['path'].split("/")[-1])
-
     return {'library_paths': library_paths, 'library_names': library_names}
 
 def create_scopes(directory_name = "secret_scopes", checkpoint = ""):
-    try:
-        secrets = os.listdir(f"./logs/{checkpoint}/{directory_name}/")
-        return {"secret_scopes" : secrets}
-    except:
-        print("secret scopes directory not found in checkpoint session. Skipping...")
+    if directory_name not in os.listdir(f"./logs/{checkpoint}/"):
+        return 1
+    secrets = os.listdir(f"./logs/{checkpoint}/{directory_name}/")
+    return {"secret_scopes" : secrets}
 
 def create_mounts(data):
     mount_paths = []
     mount_sources = []
-
     for d in data:
         try:
             d = json.loads(d)
@@ -266,11 +256,20 @@ def create_mounts(data):
             mount_sources.append(d['source'])
         except Exception as e:
             print("Error in mounts...")
-
     return { 'mount_paths' : mount_paths, 'mount_sources' : mount_sources }
 
 
+def create_database(checkpoint = "", directory_name = 'metastore'):
+    if directory_name not in os.listdir(f"./logs/{checkpoint}/"):
+        return 1
+    metastore_path = f"./logs/{checkpoint}/{directory_name}"
+    return {'databases': [i for i in os.listdir(metastore_path) if i != ".DS_Store"]}
+
+
 def create_metastore(checkpoint = "", directory_name = 'metastore'):
+    if directory_name not in os.listdir(f"./logs/{checkpoint}/"):
+        return 1
+     
     metastore_path = f"./logs/{checkpoint}/{directory_name}"
     try: 
         metastore_database = [i for i in os.listdir(metastore_path) if i != ".DS_Store"]

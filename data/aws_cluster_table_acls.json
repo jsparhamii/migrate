@@ -1,9 +1,9 @@
 {
   "num_workers": 1,
-  "cluster_name": "E2_Migration",
+  "cluster_name": "E2_Migration_Table_ACLs",
   "spark_version": "10.4.x-scala2.12",
   "spark_conf": {
-    "spark.databricks.acl.dfAclsEnabled": "true",
+    "spark.databricks.acl.dfAclsEnabled": "true"
   },
   "aws_attributes": {
     "first_on_demand": 1,
