@@ -69,7 +69,7 @@ class JobsClient(ClustersClient):
             job_name = job['settings']['name']
             # job name was set to `old_job_name:::{job_id}` to support duplicate job names
             # we need to parse the old job name and update the current jobs
-            if checkpoint_job_configs_set.contains(job_name):
+            if checkpoint_job_configs_set.contains(job_name) or (':::' not in job_name):
                 continue
             old_job_name = job_name.split(':::')[0]
             new_settings = {'name': old_job_name}
