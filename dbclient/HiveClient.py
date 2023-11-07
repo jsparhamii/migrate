@@ -274,7 +274,7 @@ class HiveClient(ClustersClient):
                             success_metastore_log_path, current_iam, checkpoint_metastore_set, has_unicode)
 
     def export_hive_metastore(self, cluster_name=None, metastore_dir='metastore/', db_log='database_details.log',
-                              success_log='success_metastore.log', has_unicode=False):
+                              success_log='success_metastore.log', has_unicode=False, database=None):
         start = timer()
         checkpoint_metastore_set = self._checkpoint_service.get_checkpoint_key_set(
             wmconstants.WM_EXPORT, wmconstants.METASTORE_TABLES)
@@ -300,7 +300,10 @@ class HiveClient(ClustersClient):
         database_logfile = self.get_export_dir() + db_log
         if os.path.exists(success_metastore_log_path):
             os.remove(success_metastore_log_path)
-        all_dbs = self.get_all_databases(error_logger, cid, ec_id)
+        if database: 
+            all_dbs = database
+        else: 
+            all_dbs = self.get_all_databases(error_logger, cid, ec_id)
         resp = self.set_desc_database_helper(cid, ec_id)
         if self.is_verbose():
             logging.info(resp)

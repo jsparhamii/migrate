@@ -295,7 +295,8 @@ class MetastoreExportTask(AbstractTask):
     def run(self):
         hive_c = HiveClient(self.client_config, self.checkpoint_service)
         hive_c.export_hive_metastore(cluster_name=self.args.cluster_name,
-                                     has_unicode=self.args.metastore_unicode)
+                                     has_unicode=self.args.metastore_unicode, 
+                                     database=self.args.database,)
 
 
 class MetastoreImportTask(AbstractTask):
