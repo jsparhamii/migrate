@@ -520,8 +520,8 @@ def get_pipeline_parser() -> argparse.ArgumentParser:
     parser.add_argument('--skip-missing-users', action='store_true', default=False,
                         help='Skip missing principles during import.')
 
-    parser.add_argument('--database', action='store', default=False, 
-                        help='Set a default job owner for jobs without an owner.')
+    parser.add_argument('--database', nargs="+", action='store', default=[], 
+                        help='list of databases to selectively export')
 
     # Pipeline arguments
     parser.add_argument('--session', action='store', default='',
