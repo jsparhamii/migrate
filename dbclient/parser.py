@@ -503,6 +503,10 @@ def get_pipeline_parser() -> argparse.ArgumentParser:
 
     parser.add_argument('--archive-missing', action='store_true',
                         help='Import all missing users into the top level /Archive/ directory.')
+    # Cluster + Job arguments 
+    parser.add_argument('--nitro', action='store_true', 
+                        help='Set to use Nitro cluster types for all clusters and jobs.')
+
     # Jobs arguments
     parser.add_argument('--default-job-owner', action='store', default=False, 
                         help='Set a default job owner for jobs without an owner.')

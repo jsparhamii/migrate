@@ -1,4 +1,5 @@
 import json
+import csv
 import os
 import logging
 import logging_utils
@@ -159,7 +160,19 @@ class JobsClient(ClustersClient):
                             'error': message, 'json': json.dumps(x)
                         })
 
-    def import_job_configs(self, log_file='jobs.log', acl_file='acl_jobs.log', job_map_file='job_id_map.log'):
+    def nitro_instance_mapping(self, instance_type_id):
+        dict_from_csv = {}
+        real_path = os.path.dirname(os.path.realpath(__file__))
+        csv_file = f'{real_path}/../data/nitro_mapping.csv'
+        with open(csv_file, newline='', mode='r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                dict_from_csv[row['PVC Instance Type']] = row['Recommended Nitro Instance Type']
+
+            nitro_instance_id = dict_from_csv[instance_type_id]
+        return nitro_instance_id
+    
+    def import_job_configs(self, log_file='jobs.log', acl_file='acl_jobs.log', job_map_file='job_id_map.log', nitro=False):
         jobs_log = self.get_export_dir() + log_file
         acl_jobs_log = self.get_export_dir() + acl_file
         job_map_log = self.get_export_dir() + job_map_file
@@ -242,7 +255,13 @@ class JobsClient(ClustersClient):
                         mod_task_settings.append(adjust_ids_for_cluster(task_settings))
                     if len(mod_task_settings) > 0:
                         job_settings['tasks'] = mod_task_settings
-
+                if nitro: 
+                    if 'new_cluster' in job_settings:
+                        if 'node_type_id' in job_settings['new_cluster']:
+                            job_settings['new_cluster']['node_type_id'] = self.nitro_instance_mapping(job_settings['new_cluster']['node_type_id'])
+                        if 'driver_node_type_id' in job_settings['new_cluster']:
+                            job_settings['new_cluster']['driver_node_type_id'] = self.nitro_instance_mapping(job_settings['new_cluster']['driver_node_type_id'])
+                logging.info(job_settings)
                 logging.info("Current Job Name: {0}".format(job_conf['settings']['name']))
                 # creator can be none if the user is no longer in the org. see our docs page
                 create_resp = self.post('/jobs/create', job_settings)

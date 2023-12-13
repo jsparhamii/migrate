@@ -226,7 +226,7 @@ class ClustersImportTask(AbstractTask):
     def run(self):
         cl_c = ClustersClient(self.client_config, self.checkpoint_service)
         cl_c.import_cluster_policies()
-        cl_c.import_cluster_configs()
+        cl_c.import_cluster_configs(nitro=self.args.nitro)
 
 
 class InstancePoolsImportTask(AbstractTask):
@@ -277,7 +277,7 @@ class JobsImportTask(AbstractTask):
 
     def run(self):
         jobs_c = JobsClient(self.client_config, self.checkpoint_service)
-        jobs_c.import_job_configs()
+        jobs_c.import_job_configs(nitro=self.args.nitro)
 
 
 class MetastoreExportTask(AbstractTask):
