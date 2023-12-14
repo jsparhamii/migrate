@@ -258,7 +258,7 @@ class ClustersClient(dbclient):
                 policy_id_dict[old_policy_id] = current_policies_dict[policy_name] # old_id : new_id
         return policy_id_dict
     
-    def nitro_instance_mapping(self, node_instance_type_id, driver_node_instance_type_id):
+    def nitro_instance_mapping(self, instance_type_id):
         dict_from_csv = {}
         real_path = os.path.dirname(os.path.realpath(__file__))
         csv_file = f'{real_path}/../data/nitro_mapping.csv'
@@ -267,9 +267,8 @@ class ClustersClient(dbclient):
             for row in reader:
                 dict_from_csv[row['PVC Instance Type']] = row['Recommended Nitro Instance Type']
 
-        nitro_node_instance_id = dict_from_csv[node_instance_type_id]
-        nitro_driver_node_instance_id = dict_from_csv[driver_node_instance_type_id]
-        return nitro_node_instance_id, nitro_driver_node_instance_id
+        nitro_instance_type_id = dict_from_csv[instance_type_id]
+        return nitro_instance_type_id
 
     def import_cluster_configs(self, log_file='clusters.log', acl_log_file='acl_clusters.log', filter_user=None, nitro=False):
         """
@@ -316,7 +315,10 @@ class ClustersClient(dbclient):
                         cluster_conf['custom_tags'] = {'OriginalCreator': cluster_creator}
                     new_cluster_conf = cluster_conf
                 if nitro: 
-                    new_cluster_conf['node_type_id'], new_cluster_conf['driver_node_type_id'] = self.nitro_instance_mapping(new_cluster_conf['node_type_id'], new_cluster_conf['driver_node_type_id'])
+                    if 'node_type_id' in new_cluster_conf: 
+                        new_cluster_conf['node_type_id'] = self.nitro_instance_mapping(new_cluster_conf['node_type_id'])
+                    if 'driver_node_type_id' in new_cluster_conf:
+                        new_cluster_conf['driver_node_type_id'] = self.nitro_instance_mapping(new_cluster_conf['driver_node_type_id'])
 
                 print("Creating cluster: {0}".format(new_cluster_conf['cluster_name']))
                 cluster_resp = self.post('/clusters/create', new_cluster_conf)
