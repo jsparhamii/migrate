@@ -112,15 +112,15 @@ def rename_group_file(mapping):
 def main():
     all_args = argparse.ArgumentParser()
     all_args.add_argument("--dir", "--file", dest="file", required=True, help='directory needs to be updated via mapping.')
-    #all_args.add_argument("-m", "--mapping", dest="mapping", required=True, help='one-to-one mapping provided by a comma delim file')
-    #all_args.add_argument("--new-email-column", dest="column", required=True, help='email column in the mapping file with updated email addresses')
+    all_args.add_argument("-m", "--mapping", dest="mapping", required=True, help='one-to-one mapping provided by a comma delim file')
+    all_args.add_argument("--new-email-column", dest="column", required=True, help='email column in the mapping file with updated email addresses')
 
     args = all_args.parse_args()
     file_name = args.file
-    #mapping_file_ = args.mapping
-    #email_column = args.column
+    mapping_file_ = args.mapping
+    email_column = args.column
 
-    #mapping = to_dict(mapping_file_, email_column)
+    mapping = to_dict(mapping_file_, email_column)
     mapping = {"old_group_name": "new_group_name"}
     print("--------------------")
     pretty_print_dict(mapping)
