@@ -24,31 +24,19 @@ if response.status_code == 200:
     for cluster in clusters:
         cluster_id = cluster["cluster_id"]
         
-        # Unpin the cluster
-        unpin_endpoint = f"https://{DATABRICKS_INSTANCE}/api/2.0/clusters/edit"
-        unpin_payload = {
-            "cluster_id": cluster_id,
-            "pinned": False
-        }
-        unpin_response = requests.post(unpin_endpoint, headers={"Authorization": f"Bearer {access_token}"}, json=unpin_payload)
+        print(f"Cluster {cluster_id} unpinned successfully")
         
-        # Check if the unpin operation was successful
-        if unpin_response.status_code == 200:
-            print(f"Cluster {cluster_id} unpinned successfully")
-            
-            if cluster_id == CURRENT_CLUSTER_ID:
-                print(f"Skipping current cluster {cluster_id}")
-                continue
-            # Delete the cluster
-            delete_endpoint = f"https://{DATABRICKS_INSTANCE}/api/2.0/clusters/delete?cluster_id={cluster_id}"
-            delete_response = requests.post(delete_endpoint, headers={"Authorization": f"Bearer {access_token}"})
-            
-            # Check if the cluster deletion was successful
-            if delete_response.status_code == 200:
-                print(f"Cluster {cluster_id} deleted successfully")
-            else:
-                print(f"Failed to delete cluster {cluster_id}")
+        if cluster_id == CURRENT_CLUSTER_ID:
+            print(f"Skipping current cluster {cluster_id}")
+            continue
+        # Delete the cluster
+        delete_endpoint = f"https://{DATABRICKS_INSTANCE}/api/2.0/clusters//api/2.0/clusters/permanent-delete?cluster_id={cluster_id}"
+        delete_response = requests.post(delete_endpoint, headers={"Authorization": f"Bearer {access_token}"})
+        
+        # Check if the cluster deletion was successful
+        if delete_response.status_code == 200:
+            print(f"Cluster {cluster_id} deleted successfully")
         else:
-            print(f"Failed to unpin cluster {cluster_id}")
+            print(f"Failed to delete cluster {cluster_id}")
 else:
     print("Failed to retrieve the list of clusters")
