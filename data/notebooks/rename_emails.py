@@ -55,7 +55,19 @@ def map(file_name, mapping):
         data = f.read()
         print(f"   Currently mapping {file_name}")
     for e in mapping:
-        data = data.replace(e, mapping[e])
+        if "@" in mapping[e]: # this is an user
+            data = data.replace(f"\"user_name\": \"{e}\"", f"\"user_name\": \"{mapping[e]}\"") # in most ACLs
+            print(f"\"/Users/{e}/")
+            print(f"\"/Users/{mapping[e]}/")
+            data = data.replace(f"\"/Users/{e}/", f"\"/Users/{mapping[e]}/") # in notebook paths
+            data = data.replace(f"\"display\": \"{e}\"", f"\"display\": \"{mapping[e]}\"") # in groups
+            data = data.replace(f"\"userName\": \"{e}\"", f"\"userName\": \"{mapping[e]}\"") # in groups
+            data = data.replace(f"\"principal\": \"{e}\"", f"\"principal\": \"{mapping[e]}\"") # in secret ACLs
+        else: # this is a service principal
+            data = data.replace(f"\"user_name\": \"{e}\"", f"\"service_principal_name\": \"{mapping[e]}\"") # in most ACLs
+            data = data.replace(f"\"display\": \"{e}\"", f"\"display\": \"{mapping[e]}\"") # in groups
+            data = data.replace(f"\"principal\": \"{e}\"", f"\"principal\": \"{mapping[e]}\"") # in secret ACLs
+
     return data
 
 def write(file_name, data_write):
@@ -118,16 +130,17 @@ def mapping_file(file_name, mapping):
 
 def main():
     all_args = argparse.ArgumentParser()
-    all_args.add_argument("--dir", "--file", dest="file", required=True, help='directory needs to be updated via mapping.')
-    all_args.add_argument("-m", "--mapping", dest="mapping", required=True, help='one-to-one mapping provided by a comma delim file')
-    all_args.add_argument("--new-email-column", dest="column", required=True, help='email column in the mapping file with updated email addresses')
+    #all_args.add_argument("--dir", "--file", dest="file", required=True, help='directory needs to be updated via mapping.')
+    #all_args.add_argument("-m", "--mapping", dest="mapping", required=True, help='one-to-one mapping provided by a comma delim file')
+    #all_args.add_argument("--new-email-column", dest="column", required=True, help='email column in the mapping file with updated email addresses')
 
-    args = all_args.parse_args()
-    file_name = args.file
-    mapping_file_ = args.mapping
-    email_column = args.column
+    #args = all_args.parse_args()
+    #file_name = args.file
+    #mapping_file_ = args.mapping
+    #email_column = args.column
 
-    mapping = to_dict(mapping_file_, email_column)
+    #mapping = to_dict(mapping_file_, email_column)
+    mapping = {"admin": "ADMIN_NEW@GMAIL.COM", "service_principal": "service_principal_id"}
     print("--------------------")
     pretty_print_dict(mapping)
     print("--------------------")
@@ -136,7 +149,8 @@ def main():
         exit()
 
     # change the current working director to specified path
-    os.chdir(file_name)
+    os.chdir("logs/session")
+    #os.chdir(file_name)
     # verify the path using getcwd()
     cwd = os.getcwd()
     print("--------------------")
@@ -151,10 +165,11 @@ def main():
         if "groups" == file:
             groups = os.listdir("groups")
             for g in groups:
-                mapping_file("groups/"+g, mapping)
+                if g != ".DS_Store":
+                    mapping_file("groups/"+g, mapping)
 
 
-    rename_users_folder(mapping)
+    #rename_users_folder(mapping)
 
 if __name__ == "__main__":
     main()
