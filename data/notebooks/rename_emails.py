@@ -130,17 +130,17 @@ def mapping_file(file_name, mapping):
 
 def main():
     all_args = argparse.ArgumentParser()
-    #all_args.add_argument("--dir", "--file", dest="file", required=True, help='directory needs to be updated via mapping.')
-    #all_args.add_argument("-m", "--mapping", dest="mapping", required=True, help='one-to-one mapping provided by a comma delim file')
-    #all_args.add_argument("--new-email-column", dest="column", required=True, help='email column in the mapping file with updated email addresses')
+    all_args.add_argument("--dir", "--file", dest="file", required=True, help='directory needs to be updated via mapping.')
+    all_args.add_argument("-m", "--mapping", dest="mapping", required=True, help='one-to-one mapping provided by a comma delim file')
+    all_args.add_argument("--new-email-column", dest="column", required=True, help='email column in the mapping file with updated email addresses')
 
-    #args = all_args.parse_args()
-    #file_name = args.file
-    #mapping_file_ = args.mapping
-    #email_column = args.column
+    args = all_args.parse_args()
+    file_name = args.file
+    mapping_file_ = args.mapping
+    email_column = args.column
 
-    #mapping = to_dict(mapping_file_, email_column)
-    mapping = {"admin": "ADMIN_NEW@GMAIL.COM", "service_principal": "service_principal_id"}
+    mapping = to_dict(mapping_file_, email_column)
+    #mapping = {"admin": "ADMIN_NEW@GMAIL.COM", "service_principal": "service_principal_id"}
     print("--------------------")
     pretty_print_dict(mapping)
     print("--------------------")
@@ -149,8 +149,8 @@ def main():
         exit()
 
     # change the current working director to specified path
-    os.chdir("logs/session")
-    #os.chdir(file_name)
+    #os.chdir("logs/session")
+    os.chdir(file_name)
     # verify the path using getcwd()
     cwd = os.getcwd()
     print("--------------------")
