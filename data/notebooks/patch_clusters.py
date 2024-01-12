@@ -159,8 +159,9 @@ def update_cluster_ips(client, clusters_list, instance_profiles):
             c['aws_attributes']['instance_profile_arn'] = instance_profiles[c_name]
             endpoint = "/clusters/edit"
             json_params = c
-            client.patch(endpoint, json_params)
-
+            results = client.patch(endpoint, json_params)
+            print(f"{datetime.now()}  {c_name} was updated with {instance_profiles[c_name]}. Status code: {results.get('http_status_code', 0)}")
+            
     return clusters_list
 
 def confirm_updated_ips(client, instance_profiles): 
