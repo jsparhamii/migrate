@@ -4,6 +4,33 @@ import os
 import requests
 import argparse
 
+import warnings
+warnings.filterwarnings("ignore")
+
+create_configs = {'num_workers',
+                    'autoscale',
+                    'cluster_name',
+                    'spark_version',
+                    'spark_conf',
+                    'aws_attributes',
+                    'node_type_id',
+                    'driver_node_type_id',
+                    'ssh_public_keys',
+                    'custom_tags',
+                    'cluster_log_conf',
+                    'init_scripts',
+                    'docker_image',
+                    'spark_env_vars',
+                    'autotermination_minutes',
+                    'enable_elastic_disk',
+                    'instance_pool_id',
+                    'driver_instance_pool_id',
+                    'policy_id',
+                    'pinned_by_user_name',
+                    'creator_user_name',
+                    'cluster_id',
+                    'data_security_mode'}
+
 class dbclient:
     """
     Rest API Wrapper for Databricks APIs
@@ -152,18 +179,34 @@ def get_clusters_ips(log_name):
                 instance_profiles[c_name] = ip
     return instance_profiles
 
-def update_cluster_ips(client, clusters_list, instance_profiles):
-    for c in clusters_list:
-        c_name = c.get('cluster_name', 0)
-        if c_name in instance_profiles.keys():
-            c['aws_attributes']['instance_profile_arn'] = instance_profiles[c_name]
-            endpoint = "/clusters/edit"
-            json_params = c
-            print(json_params)
-            results = client.post(endpoint, json_params)
+def update_cluster_ips(client, instance_profiles):
+    cnames = get_clusters_list(client)
+    for c in cnames:
+        print(c)
+        if c.get('cluster_name', -1293) in instance_profiles.keys():
+            c_name = c.get('cluster_name', 0)
+            c_id = c.get('cluster_id', 0)
+            current_cluster_json = client.get(f'/clusters/get?cluster_id={c_id}')
+            print(current_cluster_json)
+            run_properties = set(list(current_cluster_json.keys())) - create_configs
+            for p in run_properties:
+                del current_cluster_json[p]
+            if 'aws_attributes' in current_cluster_json:
+                aws_conf = current_cluster_json.pop('aws_attributes')
+                iam_role = instance_profiles[c_name]
+                aws_conf['instance_profile_arn'] = iam_role
+            else: 
+                aws_conf = {}
+                iam_role = instance_profiles[c_name]
+                aws_conf['instance_profile_arn'] = iam_role
+
+            current_cluster_json['aws_attributes'] = aws_conf
+
+            edit_endpoint = "/clusters/edit"
+            results = client.post(edit_endpoint, current_cluster_json, print_json=False)
             print(f"{datetime.now()}  {c_name} was updated with {instance_profiles[c_name]}. Status code: {results.get('http_status_code', 0)}")
-            
-    return clusters_list
+    
+    return
 
 def confirm_updated_ips(client, instance_profiles): 
     cnames = get_clusters_list(client)
@@ -190,7 +233,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     client = dbclient(args.token, args.url)
-    cnames = get_clusters_list(client)
+    #cnames = get_clusters_list(client)
     ips = get_clusters_ips(log_name=args.log)
-    update_cluster_ips(client, cnames, ips)
+    update_cluster_ips(client, ips)
     confirm_updated_ips(client, ips)
