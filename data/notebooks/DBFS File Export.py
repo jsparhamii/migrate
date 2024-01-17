@@ -1,0 +1,48 @@
+# Databricks notebook source
+dbutils.widgets.text("bucket","dbfs:/mnt/....","1: S3 Intermediary Bucket")
+dbutils.widgets.text("dbfs","dbfs:/","2: DBFS Directory")
+
+# COMMAND ----------
+
+from py4j.java_gateway import java_import
+java_import(sc._gateway.jvm, "")
+
+bucket_dest_dir = dbutils.widgets.get("bucket")
+dbfs_source_dir = dbutils.widgets.get("dbfs")
+
+print(f"Getting list of files in the source directory {dbfs_source_dir}...")
+
+# Get list of files in the source directory
+skip_paths = ["dbfs:/mnt/", "dbfs:/databricks/", "dbfs:/databricks-datasets/","dbfs:/databricks-results/"]
+files = dbutils.fs.ls(dbfs_source_dir)
+print(f"Found {len(files)} in source directory.")
+
+# COMMAND ----------
+
+# hadoop_conf = sc._jsc.hadoopConfiguration(): This line is getting the Hadoop configuration from the Java Spark Context. This configuration contains settings for Hadoop and can be used to interact with the Hadoop file system.
+# hadoop_fs = sc._gateway.jvm.org.apache.hadoop.fs.FileSystem: This line is accessing the Hadoop FileSystem class via PySpark's JVM gateway. The FileSystem class is a generic class in Hadoop that handles file systems.
+# hadoop_path = sc._gateway.jvm.org.apache.hadoop.fs.Path: This line is accessing the Hadoop Path class via PySpark's JVM gateway. The Path class represents file and directory paths in a Hadoop file system.
+
+hadoop_conf = sc._jsc.hadoopConfiguration()
+hadoop_fs = sc._gateway.jvm.org.apache.hadoop.fs.FileSystem
+hadoop_path = sc._gateway.jvm.org.apache.hadoop.fs.Path
+
+def copy_file(file):
+    from_path = hadoop_path(file)
+    to_path = hadoop_path(bucket_dest_dir)
+    from_fs = hadoop_fs.get(from_path.toUri(), hadoop_conf)
+    to_fs = hadoop_fs.get(to_path.toUri(), hadoop_conf)
+    print(f"Moving {from_path} to {to_path}")
+    sc._gateway.jvm.org.apache.hadoop.fs.FileUtil.copy(from_fs, from_path, to_fs, to_path, False, hadoop_conf)
+
+
+# Copy each file to the destination directory
+for file in files:
+    file_name = file.path
+    copy_file(file_name)
+
+print("All files copied to the bucket successfully!")
+
+# COMMAND ----------
+
+
