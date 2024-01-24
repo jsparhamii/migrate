@@ -99,7 +99,7 @@ class ClustersClient(dbclient):
         if 'aws_attributes' in cluster_json:
             aws_conf = cluster_json.pop('aws_attributes')
             iam_role = aws_conf.get('instance_profile_arn', None)
-            if not iam_role:
+            if iam_role:
                 cluster_json['aws_attributes'] = {'instance_profile_arn': iam_role}
 
         return cluster_json
