@@ -354,18 +354,43 @@ class ClustersClient(dbclient):
                     raise ValueError(error_message)
                 api = f'/preview/permissions/clusters/{cid}'
                 resp = self.put(api, acl_args)
+                # remove user/group from ACL list if they don't exist
 
                 if self.skip_missing_users:
-                    ignore_error_list = ["RESOURCE_DOES_NOT_EXIST", "RESOURCE_ALREADY_EXISTS"]
+                    ignore_error_list = ["RESOURCE_DOES_NOT_EXIST", "RESOURCE_ALREADY_EXISTS"]                        
                 else:
                     ignore_error_list = ["RESOURCE_ALREADY_EXISTS"]
 
                 if logging_utils.check_error(resp, ignore_error_list):
-                    logging_utils.log_response_error(error_logger, resp)
+                    if resp['error_code'] == 'RESOURCE_DOES_NOT_EXIST':
+                        resp = self.remove_missing_users(api, acl_args, resp)
+                        if not logging_utils.log_response_error(error_logger, resp):
+                            if 'object_id' in data:
+                                checkpoint_cluster_configs_set.write(data['object_id'])
+                    else: 
+                        logging_utils.log_response_error(error_logger, resp)
                 elif 'object_id' in data:
                     checkpoint_cluster_configs_set.write(data['object_id'])
 
-                print(resp)
+    def remove_missing_users(self, api, acl_args, resp):
+        # example message: 'Principal: UserName(x.x@email.com) does not exist'
+        # or 'Principal: GroupName(x.x) does not exist'
+        resp = self.put(api, acl_args)
+        while resp.get('error_code', '') == 'RESOURCE_DOES_NOT_EXIST':
+            if 'UserName' in resp['message']:
+                missing_user = re.search(r'Principal: UserName\((.*)\) does not exist', resp['message']).group(1)
+                logging.info(f"Removing missing user {missing_user} from ACL")
+                acl_args['access_control_list'] = [acl for acl in acl_args['access_control_list'] if acl['user_name'] != missing_user]
+                resp = self.put(api, acl_args)
+            elif 'GroupName' in resp['message']:
+                missing_group = re.search(r'Principal: GroupName\((.*)\) does not exist', resp['message']).group(1)
+                logging.info(f"Removing missing group {missing_group} from ACL")
+                acl_args['access_control_list'] = [acl for acl in acl_args['access_control_list'] if acl['group_name'] != missing_group]
+                resp = self.put(api, acl_args)
+
+        return resp
+
+
 
     def _log_cluster_ids_and_original_creators(
             self,
@@ -795,4 +820,3 @@ class ClustersClient(dbclient):
         if c_state['state'] == 'TERMINATED':
             raise RuntimeError("Cluster is terminated. Please check EVENT history for details")
         return cid
-
