@@ -380,12 +380,12 @@ class ClustersClient(dbclient):
             if 'UserName' in resp['message']:
                 missing_user = re.search(r'Principal: UserName\((.*)\) does not exist', resp['message']).group(1)
                 logging.info(f"Removing missing user {missing_user} from ACL")
-                acl_args['access_control_list'] = [acl for acl in acl_args['access_control_list'] if acl['user_name'] != missing_user]
+                acl_args['access_control_list'] = [acl for acl in acl_args['access_control_list'] if acl.get('user_name', None) != missing_user]
                 resp = self.put(api, acl_args)
             elif 'GroupName' in resp['message']:
                 missing_group = re.search(r'Principal: GroupName\((.*)\) does not exist', resp['message']).group(1)
                 logging.info(f"Removing missing group {missing_group} from ACL")
-                acl_args['access_control_list'] = [acl for acl in acl_args['access_control_list'] if acl['group_name'] != missing_group]
+                acl_args['access_control_list'] = [acl for acl in acl_args['access_control_list'] if acl.get('group_name', None) != missing_group]
                 resp = self.put(api, acl_args)
 
         return resp
