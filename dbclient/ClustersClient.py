@@ -570,10 +570,10 @@ class ClustersClient(dbclient):
 
         # get users list based on groups_to_keep
         users_list = []
-        if self.groups_to_keep is not False:
-            all_users = self.get('/preview/scim/v2/Users').get('Resources', None)
-            users_list = list(set([user.get("emails")[0].get("value") for user in all_users
-                                   for group in user.get("groups") if group.get("display") in self.groups_to_keep]))
+        #if self.groups_to_keep is not False:
+        #    all_users = self.get('/preview/scim/v2/Users').get('Resources', None)
+        #    users_list = list(set([user.get("emails")[0].get("value") for user in all_users
+        #                           for group in user.get("groups") if group.get("display") in self.groups_to_keep]))
 
         cluster_log = self.get_export_dir() + log_file
         acl_cluster_log = self.get_export_dir() + acl_log_file
@@ -646,11 +646,11 @@ class ClustersClient(dbclient):
 
         # get users list based on groups_to_keep
         users_list = []
-        if self.groups_to_keep is not False:
-            all_users = self.get('/preview/scim/v2/Users').get('Resources', None)
-            users_list = list(set([user.get("emails")[0].get("value") for user in all_users
-                                   for group in user.get("groups") if
-                                   group.get("display") in self.groups_to_keep]))
+        #if self.groups_to_keep is not False:
+        #    all_users = self.get('/preview/scim/v2/Users').get('Resources', None)
+        #    users_list = list(set([user.get("emails")[0].get("value") for user in all_users
+        #                           for group in user.get("groups") if
+        #                           group.get("display") in self.groups_to_keep]))
 
         # log cluster policy ACLs, which takes a policy id as arguments
         with open(acl_policies_log, 'w', encoding="utf-8") as acl_fp:
