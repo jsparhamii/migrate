@@ -1,5 +1,6 @@
 import logging
 import os
+import csv
 import re
 import time
 import logging_utils
@@ -98,7 +99,7 @@ class ClustersClient(dbclient):
         if 'aws_attributes' in cluster_json:
             aws_conf = cluster_json.pop('aws_attributes')
             iam_role = aws_conf.get('instance_profile_arn', None)
-            if not iam_role:
+            if iam_role:
                 cluster_json['aws_attributes'] = {'instance_profile_arn': iam_role}
 
         return cluster_json
@@ -257,7 +258,19 @@ class ClustersClient(dbclient):
                 policy_id_dict[old_policy_id] = current_policies_dict[policy_name] # old_id : new_id
         return policy_id_dict
 
-    def import_cluster_configs(self, log_file='clusters.log', acl_log_file='acl_clusters.log', filter_user=None):
+    def nitro_instance_mapping(self, instance_type_id):
+        dict_from_csv = {}
+        real_path = os.path.dirname(os.path.realpath(__file__))
+        csv_file = f'{real_path}/../data/nitro_mapping.csv'
+        with open(csv_file, newline='', mode='r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                dict_from_csv[row['PVC Instance Type']] = row['Recommended Nitro Instance Type']
+
+        nitro_instance_type_id = dict_from_csv[instance_type_id]
+        return nitro_instance_type_id
+        
+    def import_cluster_configs(self, log_file='clusters.log', acl_log_file='acl_clusters.log', filter_user=None, nitro=False):
         """
         Import cluster configs and update appropriate properties / tags in the new env
         :param log_file:
@@ -301,6 +314,12 @@ class ClustersClient(dbclient):
                     else:
                         cluster_conf['custom_tags'] = {'OriginalCreator': cluster_creator}
                     new_cluster_conf = cluster_conf
+                if nitro: 
+                    if 'node_type_id' in new_cluster_conf: 
+                        new_cluster_conf['node_type_id'] = self.nitro_instance_mapping(new_cluster_conf['node_type_id'])
+                    if 'driver_node_type_id' in new_cluster_conf:
+                        new_cluster_conf['driver_node_type_id'] = self.nitro_instance_mapping(new_cluster_conf['driver_node_type_id'])
+
                 print("Creating cluster: {0}".format(new_cluster_conf['cluster_name']))
                 cluster_resp = self.post('/clusters/create', new_cluster_conf)
                 if cluster_resp['http_status_code'] == 200:
@@ -310,6 +329,9 @@ class ClustersClient(dbclient):
                     if 'cluster_id' in cluster_conf:
                         checkpoint_cluster_configs_set.write(cluster_conf['cluster_id'])
                 else:
+                    cluster_resp['old_cluster_id'] = cluster_conf['cluster_id']
+                    cluster_resp['old_cluster_name'] = cluster_conf['cluster_name']
+
                     logging_utils.log_response_error(error_logger, cluster_resp)
                     print(cluster_resp)
 
@@ -338,13 +360,37 @@ class ClustersClient(dbclient):
                     ignore_error_list = ["RESOURCE_DOES_NOT_EXIST", "RESOURCE_ALREADY_EXISTS"]
                 else:
                     ignore_error_list = ["RESOURCE_ALREADY_EXISTS"]
-
+                
                 if logging_utils.check_error(resp, ignore_error_list):
+                    if resp['error_code'] == 'RESOURCE_DOES_NOT_EXIST':
+                        resp = self.remove_missing_users(api, acl_args, resp)
+                        if not logging_utils.log_response_error(error_logger, resp):
+                            if 'object_id' in data:
+                                checkpoint_cluster_configs_set.write(data['object_id'])
+                    else: 
+                        logging_utils.log_response_error(error_logger, resp)
                     logging_utils.log_response_error(error_logger, resp)
                 elif 'object_id' in data:
                     checkpoint_cluster_configs_set.write(data['object_id'])
 
                 print(resp)
+
+    def remove_missing_users(self, api, acl_args, resp):
+        # example message: 'Principal: UserName(x.x@email.com) does not exist'
+        # or 'Principal: GroupName(x.x) does not exist'
+        resp = self.put(api, acl_args)
+        while resp.get('error_code', '') == 'RESOURCE_DOES_NOT_EXIST':
+            if 'UserName' in resp['message']:
+                missing_user = re.search(r'Principal: UserName\((.*)\) does not exist', resp['message']).group(1)
+                logging.info(f"Removing missing user {missing_user} from ACL")
+                acl_args['access_control_list'] = [acl for acl in acl_args['access_control_list'] if acl.get('user_name', None) != missing_user]
+                resp = self.put(api, acl_args)
+            elif 'GroupName' in resp['message']:
+                missing_group = re.search(r'Principal: GroupName\((.*)\) does not exist', resp['message']).group(1)
+                logging.info(f"Removing missing group {missing_group} from ACL")
+                acl_args['access_control_list'] = [acl for acl in acl_args['access_control_list'] if acl.get('group_name', None) != missing_group]
+                resp = self.put(api, acl_args)
+        return resp
 
     def _log_cluster_ids_and_original_creators(
             self,
@@ -570,10 +616,10 @@ class ClustersClient(dbclient):
 
         # get users list based on groups_to_keep
         users_list = []
-        #if self.groups_to_keep is not False:
-        #    all_users = self.get('/preview/scim/v2/Users').get('Resources', None)
-        #    users_list = list(set([user.get("emails")[0].get("value") for user in all_users
-        #                           for group in user.get("groups") if group.get("display") in self.groups_to_keep]))
+        if self.groups_to_keep is not False:
+            all_users = self.get('/preview/scim/v2/Users').get('Resources', None)
+            users_list = list(set([user.get("emails")[0].get("value") for user in all_users
+                                   for group in user.get("groups") if group.get("display") in self.groups_to_keep]))
 
         cluster_log = self.get_export_dir() + log_file
         acl_cluster_log = self.get_export_dir() + acl_log_file
@@ -646,11 +692,11 @@ class ClustersClient(dbclient):
 
         # get users list based on groups_to_keep
         users_list = []
-        #if self.groups_to_keep is not False:
-        #    all_users = self.get('/preview/scim/v2/Users').get('Resources', None)
-        #    users_list = list(set([user.get("emails")[0].get("value") for user in all_users
-        #                           for group in user.get("groups") if
-        #                           group.get("display") in self.groups_to_keep]))
+        if self.groups_to_keep is not False:
+            all_users = self.get('/preview/scim/v2/Users').get('Resources', None)
+            users_list = list(set([user.get("emails")[0].get("value") for user in all_users
+                                   for group in user.get("groups") if
+                                   group.get("display") in self.groups_to_keep]))
 
         # log cluster policy ACLs, which takes a policy id as arguments
         with open(acl_policies_log, 'w', encoding="utf-8") as acl_fp:
