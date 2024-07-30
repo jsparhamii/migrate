@@ -30,7 +30,10 @@ def fix_schema_errors(basePath: str, namespace: str):
                 ddl = f.read()
                 print(ddl)
                 x = re.search(loc_pattern, ddl)
-                
+                print(f"Removing {namespace} from Create Statement")
+                ddl = re.sub(f'{namespace}.', '', ddl)
+
+
                 if x:
                     print(f"Removing {namespace} from Create Statement")
                     ddl = re.sub(f'{namespace}.', '', ddl)
