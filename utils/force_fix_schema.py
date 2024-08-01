@@ -29,20 +29,21 @@ def fix_schema_errors(basePath: str, namespace: str):
                 print(f"Opened file {fileName}")
                 ddl = f.read()
                 print(ddl)
-                x = re.search(loc_pattern, ddl)
+                # x = re.search(loc_pattern, ddl)
                 print(f"Removing {namespace} from Create Statement")
                 ddl = re.sub(f'{namespace}.', '', ddl)
+                ddl = re.sub(r'\([^()]*\)', '', ddl)
+                ddl = re.sub(tbl_pattern, '', ddl)
 
-
-                if x:
-                    print(f"Removing {namespace} from Create Statement")
-                    ddl = re.sub(f'{namespace}.', '', ddl)
-                    print('Removing schema definition from ddl')
-                    ddl = re.sub(r'\([^()]*\)', '', ddl)
-                    if re.search(tbl_pattern, ddl):
-                        ddl = re.sub(tbl_pattern, '', ddl)
-                else:
-                    print(f'No Location in DDL in {fileName}, skipping...')
+                # if x:
+                #     print(f"Removing {namespace} from Create Statement")
+                #     ddl = re.sub(f'{namespace}.', '', ddl)
+                #     print('Removing schema definition from ddl')
+                #     ddl = re.sub(r'\([^()]*\)', '', ddl)
+                #     if re.search(tbl_pattern, ddl):
+                #         ddl = re.sub(tbl_pattern, '', ddl)
+                # else:
+                #     print(f'No Location in DDL in {fileName}, skipping...')
             with open(fileName, 'w') as file:
                 file.write(ddl)
 
