@@ -42,6 +42,7 @@ class MetastoreUpdater:
                 database_details[db_name] = db_location
             except json.decoder.JSONDecodeError:
                 print("Error decoding JSON for database:", db)
+                continue
             
         return database_details
             
