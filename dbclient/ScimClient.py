@@ -7,39 +7,69 @@ import wmconstants
 import concurrent
 from concurrent.futures import ThreadPoolExecutor
 from threading_utils import propagate_exceptions
+import concurrent.futures
 
 class ScimClient(dbclient):
     def __init__(self, configs, checkpoint_service):
         super().__init__(configs)
         self._checkpoint_service = checkpoint_service
         self.groups_to_keep = configs.get("groups_to_keep", False)
+        self.users_list = self.get_users_full_from_log()
+
+
+    def fetch_page(self, start, count):
+        endpoint = f'/preview/scim/v2/Users?startIndex={start}&count={count}'
+        response = self.get(endpoint)
+        return response.get('Resources', [])
 
     def get_active_users(self):
-        users = self.get('/preview/scim/v2/Users').get('Resources', None)
-        return users if users else None
+
+        if self._use_logs and self.users_list is None:
+            results = self.get_users_full_from_log()
+        elif self._use_logs:
+            results = self.users_list
+        
+        if results is None:
+            page_size = 10
+            first_response = self.get(f'/preview/scim/v2/Users?startIndex=1&count=1')
+            total = first_response.get('totalResults', 0)
+            if total == 0:
+                return None
+
+            indices = range(1, total + 1, page_size)
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                futures = [executor.submit(self.fetch_page, i, page_size) for i in indices]
+                results = []
+                for future in concurrent.futures.as_completed(futures):
+                    results.extend(future.result())
+                    
+        return results or None
 
     def log_all_users(self, log_file='users.log'):
         user_log = self.get_export_dir() + log_file
-        users = self.get('/preview/scim/v2/Users').get('Resources', None)
-        if users:
+    
+        all_users = self.get_active_users()
+
+        if all_users:
             with open(user_log, "w", encoding="utf-8") as fp:
-                for x in users:
+                for x in all_users:
                     fullname = x.get('name', None)
 
-                    # if a group list has been passed, check to see if current user is part of groups
                     if self.groups_to_keep:
-                        user_groups = [g['display'] for g in x.get('groups')]
+                        user_groups = [g['display'] for g in x.get('groups', [])]
                         if not set(user_groups).intersection(set(self.groups_to_keep)):
                             continue
 
                     if fullname:
                         given_name = fullname.get('givenName', None)
-                        # if user is an admin, skip this user entry
                         if x['userName'] == 'admin' and given_name == 'Administrator':
                             continue
+
                     fp.write(json.dumps(x) + '\n')
         else:
             logging.info("Users returned an empty object")
+
 
     def log_single_user(self, user_email, log_file='single_user.log'):
         single_user_log = self.get_export_dir() + log_file
@@ -69,12 +99,38 @@ class ScimClient(dbclient):
         :return: a list of usernames that help identify their workspace paths
         """
         user_logfile = self.get_export_dir() + users_log
+        
         username_list = []
-        with open(user_logfile, 'r', encoding="utf-8") as fp:
-            for u in fp:
+        if self.users_list is None:
+            with open(user_logfile, 'r', encoding="utf-8") as fp:
+                for u in fp:
+                    user_json = json.loads(u)
+                    username_list.append(user_json.get('userName'))
+        else:
+            for u in self.users_list:
                 user_json = json.loads(u)
-                username_list.append(user_json.get('userName'))
+                username_list.append(user_json.get('userName'))  
+        
         return username_list
+        
+    
+    def get_users_full_from_log(self, users_log='users.log'):
+        """
+        fetch a list of user names from the users log file
+        meant to be used during group exports where the user list is a subset of users
+        :param users_log:
+        :return: a list of usernames that help identify their workspace paths
+        """
+        user_logfile = self.get_export_dir() + users_log
+        if os.path.isfile(user_logfile):
+            username_list = []
+            with open(user_logfile, 'r', encoding="utf-8") as fp:
+                for u in fp:
+                    user_json = json.loads(u)
+                    username_list.append(user_json)
+            return username_list
+        else:
+            return None
 
     @staticmethod
     def is_member_a_user(member_json):
@@ -98,10 +154,29 @@ class ScimClient(dbclient):
         # add the userName field to json since ids across environments may not match
         members = group_json.get('members', [])
         new_members = []
+        users_list = None
+        # try:
+        users_list = self.get_users_full_from_log() if self.users_list is None else self.users_list
+        # except Exception as e:
+        #     logging.info(e)
+
         for m in members:
             m_id = m['value']
             if self.is_member_a_user(m):
-                user_resp = self.get('/preview/scim/v2/Users/{0}'.format(m_id))
+                user_resp = None
+                if users_list:
+                    # print(users_list[0]['id'].__class__)
+                    # user_resp = next((item for item in users_list if item['id'] == m_id), None)
+                    for u in users_list:
+                        if str(u['id']) == str(m_id):
+                            user_resp = u
+                            break
+                    # user_resp = next(filter(lambda x: x.get("id") == m_id, users_list), None)
+
+                    if user_resp is None:
+                        user_resp = self.get('/preview/scim/v2/Users/{0}'.format(m_id))
+                else:
+                    user_resp = self.get('/preview/scim/v2/Users/{0}'.format(m_id))
                 m['userName'] = user_resp['userName']
                 m['type'] = 'user'
             elif self.is_member_a_group(m):
@@ -113,12 +188,36 @@ class ScimClient(dbclient):
             new_members.append(m)
         group_json['members'] = new_members
         return group_json
+    
+    def fetch_group_page(self, start, count):
+        endpoint = f'/preview/scim/v2/Groups?startIndex={start}&count={count}'
+        response = self.get(endpoint)
+        return response.get('Resources', [])
+
+    def get_active_groups(self):
+        page_size = 10
+        first_response = self.get(f'/preview/scim/v2/Groups?startIndex=1&count=1')
+        total = first_response.get('totalResults', 0)
+    
+        if total == 0:
+            return None
+
+        indices = range(1, total + 1, page_size)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(self.fetch_group_page, i, page_size) for i in indices]
+            results = []
+            for future in concurrent.futures.as_completed(futures):
+                results.extend(future.result())
+        return results or None
+
 
     def log_all_groups(self, group_log_dir='groups/'):
         group_dir = self.get_export_dir() + group_log_dir
         os.makedirs(group_dir, exist_ok=True)
-        group_list = self.get("/preview/scim/v2/Groups").get('Resources', [])
+        group_list = self.get_active_groups()
         for x in group_list:
+            logging.info(f"group: {x}")
             group_name = x['displayName']
 
             # if groups_to_keep is defined, check to see if current group is a member
@@ -126,7 +225,7 @@ class ScimClient(dbclient):
                 if group_name not in self.groups_to_keep:
                     continue
 
-            with open(group_dir + group_name, "w", encoding="utf-8") as fp:
+            with open(group_dir + group_name.replace("/", "_"), "w", encoding="utf-8") as fp:
                 fp.write(json.dumps(self.add_username_to_group(x)))
 
     @staticmethod
@@ -146,7 +245,8 @@ class ScimClient(dbclient):
         """
         group_dir = self.get_export_dir() + group_log_dir
         os.makedirs(group_dir, exist_ok=True)
-        group_list = self.get("/preview/scim/v2/Groups").get('Resources', [])
+        # group_list = self.get("/preview/scim/v2/Groups").get('Resources', [])
+        group_list = self.get_active_groups()
         group_dict = self.build_group_dict(group_list)
         member_id_list = []
         for group_name in group_name_list:
@@ -158,7 +258,7 @@ class ScimClient(dbclient):
                 sub_group_names = list(map(lambda z: z.get('display'), filtered_sub_groups))
                 group_name_list.extend(sub_group_names)
             member_id_list.extend(list(map(lambda y: y['value'], filtered_users)))
-            with open(group_dir + group_name, "w", encoding="utf-8") as fp:
+            with open(group_dir + group_name.replace("/", "_"), "w", encoding="utf-8") as fp:
                 group_details.pop('roles', None)  # removing the roles field from the groups arg
                 fp.write(json.dumps(self.add_username_to_group(group_details)))
         users_log = self.get_export_dir() + users_logfile
@@ -176,7 +276,8 @@ class ScimClient(dbclient):
 
     def get_user_id_mapping(self):
         # return a dict of the userName to id mapping of the new env
-        user_list = self.get('/preview/scim/v2/Users').get('Resources', None)
+        # user_list = self.get('/preview/scim/v2/Users').get('Resources', None)
+        user_list = self.get_active_users()
         if user_list:
             user_id_dict = {}
             for user in user_list:
@@ -222,7 +323,7 @@ class ScimClient(dbclient):
             return
         groups = self.listdir(group_dir)
         for group_name in groups:
-            with open(group_dir + group_name, 'r', encoding="utf-8") as fp:
+            with open(group_dir + group_name.replace("/", "_"), 'r', encoding="utf-8") as fp:
                 group_data = json.loads(fp.read())
                 entitlements = group_data.get('entitlements', None)
                 if entitlements:
@@ -239,7 +340,7 @@ class ScimClient(dbclient):
             return
         groups = self.listdir(group_dir)
         for group_name in groups:
-            with open(group_dir + group_name, 'r', encoding="utf-8") as fp:
+            with open(group_dir + group_name.replace("/", "_"), 'r', encoding="utf-8") as fp:
                 group_data = json.loads(fp.read())
                 roles = group_data.get('roles', None)
                 if roles:
@@ -418,7 +519,7 @@ class ScimClient(dbclient):
         # dict of { old_user_id : email }
         old_user_emails = self.get_old_user_emails()
         for group_name in groups:
-            with open(group_dir + group_name, 'r', encoding="utf-8") as fp:
+            with open(group_dir + group_name.replace("/", "_"), 'r', encoding="utf-8") as fp:
                 members = json.loads(fp.read()).get('members', None)
                 logging.info(f"Importing group {group_name} :")
                 if members:

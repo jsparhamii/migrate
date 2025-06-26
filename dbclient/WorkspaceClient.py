@@ -463,7 +463,8 @@ class WorkspaceClient(dbclient):
             notebooks = self.filter_workspace_items(items, 'NOTEBOOK')
             libraries = self.filter_workspace_items(items, 'LIBRARY')
             # only get user list if we are filtering by group
-            ws_users = self.get('/preview/scim/v2/Users').get('Resources', None) if self.groups_to_keep else []
+            # ws_users = self.get('/preview/scim/v2/Users').get('Resources', None) if self.groups_to_keep else []
+            ws_users = ws_users = ScimClient.get_active_users() if self.groups_to_keep else []
             for x in notebooks:
                 # notebook objects has path and object_id
                 nb_path = x.get('path')

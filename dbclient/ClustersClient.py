@@ -6,6 +6,7 @@ import time
 import logging_utils
 import wmconstants
 from dbclient import *
+from .ScimClient import ScimClient
 
 
 class ClustersClient(dbclient):
@@ -13,6 +14,7 @@ class ClustersClient(dbclient):
         super().__init__(configs)
         self._checkpoint_service = checkpoint_service
         self.groups_to_keep = configs.get("groups_to_keep", False)
+        self.scim_client = ScimClient(configs, checkpoint_service)
         self.skip_missing_users = configs['skip_missing_users']
         self.hipaa = configs.get('hipaa', False)
         self.bypass_secret_acl = configs.get('bypass_secret_acl', False)
@@ -617,7 +619,8 @@ class ClustersClient(dbclient):
         # get users list based on groups_to_keep
         users_list = []
         if self.groups_to_keep is not False:
-            all_users = self.get('/preview/scim/v2/Users').get('Resources', None)
+            # all_users = self.get('/preview/scim/v2/Users').get('Resources', None)
+            all_users = self.scim_client.get_active_users()
             users_list = list(set([user.get("emails")[0].get("value") for user in all_users
                                    for group in user.get("groups") if group.get("display") in self.groups_to_keep]))
 
@@ -693,7 +696,8 @@ class ClustersClient(dbclient):
         # get users list based on groups_to_keep
         users_list = []
         if self.groups_to_keep is not False:
-            all_users = self.get('/preview/scim/v2/Users').get('Resources', None)
+            # all_users = self.get('/preview/scim/v2/Users').get('Resources', None)
+            all_users = self.scim_client.get_active_users()
             users_list = list(set([user.get("emails")[0].get("value") for user in all_users
                                    for group in user.get("groups") if
                                    group.get("display") in self.groups_to_keep]))

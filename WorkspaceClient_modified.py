@@ -14,6 +14,7 @@ import logging_utils
 import logging
 import os
 from dbclient.common.WorkspaceDiff import *
+from dbclient.ScimClient import ScimClient
 
 WS_LIST = "/workspace/list"
 WS_STATUS = "/workspace/get-status"
@@ -26,6 +27,7 @@ REPOS = "/repos"
 class WorkspaceClient(dbclient):
     def __init__(self, configs, checkpoint_service):
         super().__init__(configs)
+        self.scim_client = ScimClient(configs, checkpoint_service)
         self._checkpoint_service = checkpoint_service
         self.groups_to_keep = configs.get("groups_to_keep", False)
         self.skip_missing_users = configs['skip_missing_users']
@@ -463,7 +465,9 @@ class WorkspaceClient(dbclient):
             notebooks = self.filter_workspace_items(items, 'NOTEBOOK')
             libraries = self.filter_workspace_items(items, 'LIBRARY')
             # only get user list if we are filtering by group
-            ws_users = self.get('/preview/scim/v2/Users').get('Resources', None) if self.groups_to_keep else []
+            # ws_users = self.get('/preview/scim/v2/Users').get('Resources', None) if self.groups_to_keep else []
+            ws_users = self.scim_client.get_active_users() if self.groups_to_keep else []
+
             for x in notebooks:
                 # notebook objects has path and object_id
                 nb_path = x.get('path')

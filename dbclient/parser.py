@@ -141,7 +141,8 @@ def get_export_parser():
     parser.add_argument('--database', action='store',
                         help='Database name to export for the metastore and table ACLs. Single database name supported')
 
-    # iam role used to export the metastore
+    # iam role used to export the 
+    
     parser.add_argument('--iam', action='store',
                         help='IAM Instance Profile to export metastore entires')
 
@@ -191,6 +192,9 @@ def get_export_parser():
 
     parser.add_argument('--set-export-dir', action='store',
                         help='Set the base directory to export artifacts')
+    
+    parser.add_argument('--use-logs', action='store_true', 
+                        help='Set flag to use export logs if they exists')
 
     parser.add_argument('--pause-all-jobs', action='store_true',
                         help='Pause all scheduled jobs')
@@ -453,6 +457,7 @@ def build_client_config(profile, url, token, args):
         config['export_dir'] = 'gcp_logs/'
 
     config['use_checkpoint'] = args.use_checkpoint
+    config['use_logs'] = args.use_logs
     config['num_parallel'] = args.num_parallel
     config['retry_total'] = args.retry_total
     config['retry_backoff'] = args.retry_backoff
@@ -489,6 +494,9 @@ def get_pipeline_parser() -> argparse.ArgumentParser:
 
     parser.add_argument('--set-export-dir', action='store',
                         help='Set the base directory to export artifacts')
+    
+    parser.add_argument('--use-logs', action='store_true', 
+                        help='Set flag to use export logs if they exists')
 
     parser.add_argument('--cluster-name', action='store', required=False,
                         help='Cluster name to export the metastore to a specific cluster. Cluster will be started.')
@@ -506,6 +514,7 @@ def get_pipeline_parser() -> argparse.ArgumentParser:
     # Cluster + Job arguments 
     parser.add_argument('--nitro', action='store_true', 
                         help='Set to use Nitro cluster types for all clusters and jobs.')
+    
 
     # Jobs arguments
     parser.add_argument('--default-job-owner', action='store', default=False, 
