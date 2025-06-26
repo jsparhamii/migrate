@@ -29,6 +29,7 @@ class WorkspaceClient(dbclient):
         self._checkpoint_service = checkpoint_service
         self.groups_to_keep = configs.get("groups_to_keep", False)
         self.skip_missing_users = configs['skip_missing_users']
+        self.scim_client = ScimClient(configs, checkpoint_service)
 
     _languages = {'.py': 'PYTHON',
                   '.scala': 'SCALA',
@@ -464,7 +465,7 @@ class WorkspaceClient(dbclient):
             libraries = self.filter_workspace_items(items, 'LIBRARY')
             # only get user list if we are filtering by group
             # ws_users = self.get('/preview/scim/v2/Users').get('Resources', None) if self.groups_to_keep else []
-            ws_users = ws_users = ScimClient.get_active_users() if self.groups_to_keep else []
+            ws_users = self.scim_client.get_active_users() if self.groups_to_keep else []
             for x in notebooks:
                 # notebook objects has path and object_id
                 nb_path = x.get('path')
