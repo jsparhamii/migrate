@@ -13,3 +13,5 @@ dist/
 databricks_migration_tool.egg-info
 migrate.iml
 export_dir/
+unversioned/
+

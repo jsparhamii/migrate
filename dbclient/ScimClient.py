@@ -22,7 +22,7 @@ class ScimClient(dbclient):
         response = self.get(endpoint)
         return response.get('Resources', [])
 
-    def get_active_users(self):
+    def get_active_users(self, results=None):
 
         if self._use_logs and self.users_list is None:
             results = self.get_users_full_from_log()
