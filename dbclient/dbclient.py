@@ -56,6 +56,7 @@ class dbclient:
         self._url = url_validation(configs['url'])
         self._update_token(configs['token'])
         self._export_dir = configs['export_dir']
+        self._use_logs = configs['use_logs']
         self._is_aws = configs['is_aws']
         self._is_azure = configs['is_azure']
         self._is_gcp = configs['is_gcp']
@@ -422,10 +423,12 @@ class dbclient:
         :return:
         """
         log_dir = self.get_export_dir()
-        logs_to_update = ['users.log',
+        logs_to_update = ['users.log', 
+                          'jobs.log', 
                           'acl_jobs.log',
                           'acl_clusters.log', 'acl_cluster_policies.log',
-                          'acl_notebooks.log', 'acl_directories.log']
+                          'acl_notebooks.log', 'acl_directories.log', 
+                          'secret_scopes_acls.log']
         for logfile in logs_to_update:
             if os.path.exists(log_dir + logfile):
                 self.replace_file_contents(old_email_address, new_email_address, logfile)

@@ -226,7 +226,7 @@ class ClustersImportTask(AbstractTask):
     def run(self):
         cl_c = ClustersClient(self.client_config, self.checkpoint_service)
         cl_c.import_cluster_policies()
-        cl_c.import_cluster_configs()
+        cl_c.import_cluster_configs(nitro=self.args.nitro)
 
 
 class InstancePoolsImportTask(AbstractTask):
@@ -258,9 +258,9 @@ class JobsExportTask(AbstractTask):
         jobs_c = JobsClient(self.client_config, self.checkpoint_service)
 
         if self.client_config.get("groups_to_keep"):
-            jobs_c.log_job_configs(groups_list=self.client_config.get("groups_to_keep"))
+            jobs_c.log_job_configs(groups_list=self.client_config.get("groups_to_keep"), default_job_owner=self.args.default_job_owner)
         else:
-            jobs_c.log_job_configs()
+            jobs_c.log_job_configs(default_job_owner=self.args.default_job_owner)
 
 
 class JobsImportTask(AbstractTask):
@@ -277,7 +277,7 @@ class JobsImportTask(AbstractTask):
 
     def run(self):
         jobs_c = JobsClient(self.client_config, self.checkpoint_service)
-        jobs_c.import_job_configs()
+        jobs_c.import_job_configs(nitro=self.args.nitro)
 
 
 class MetastoreExportTask(AbstractTask):
@@ -295,7 +295,8 @@ class MetastoreExportTask(AbstractTask):
     def run(self):
         hive_c = HiveClient(self.client_config, self.checkpoint_service)
         hive_c.export_hive_metastore(cluster_name=self.args.cluster_name,
-                                     has_unicode=self.args.metastore_unicode)
+                                     has_unicode=self.args.metastore_unicode, 
+                                     database=self.args.database,)
 
 
 class MetastoreImportTask(AbstractTask):

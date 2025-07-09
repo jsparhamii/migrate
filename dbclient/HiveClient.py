@@ -274,7 +274,7 @@ class HiveClient(ClustersClient):
                             success_metastore_log_path, current_iam, checkpoint_metastore_set, has_unicode)
 
     def export_hive_metastore(self, cluster_name=None, metastore_dir='metastore/', db_log='database_details.log',
-                              success_log='success_metastore.log', has_unicode=False):
+                              success_log='success_metastore.log', has_unicode=False, database=None):
         start = timer()
         checkpoint_metastore_set = self._checkpoint_service.get_checkpoint_key_set(
             wmconstants.WM_EXPORT, wmconstants.METASTORE_TABLES)
@@ -300,7 +300,10 @@ class HiveClient(ClustersClient):
         database_logfile = self.get_export_dir() + db_log
         if os.path.exists(success_metastore_log_path):
             os.remove(success_metastore_log_path)
-        all_dbs = self.get_all_databases(error_logger, cid, ec_id)
+        if database: 
+            all_dbs = database
+        else: 
+            all_dbs = self.get_all_databases(error_logger, cid, ec_id)
         resp = self.set_desc_database_helper(cid, ec_id)
         if self.is_verbose():
             logging.info(resp)
@@ -407,6 +410,7 @@ class HiveClient(ClustersClient):
                         if not self.move_table_view(db_name, tbl_name, local_table_ddl):
                             # we hit a table ddl here, so we apply the ddl
                             resp = self.apply_table_ddl(local_table_ddl, ec_id, cid, db_path, has_unicode)
+                            resp['table'] = db_name + "." + tbl_name
                             if not logging_utils.log_response_error(error_logger, resp):
                                 checkpoint_metastore_set.write(full_table_name)
                         else:
@@ -439,6 +443,7 @@ class HiveClient(ClustersClient):
                     db_name, view_name = unpack_view_db_name(full_view_name)
                     local_view_ddl = metastore_view_dir + db_name + '/' + view_name
                     resp = self.apply_table_ddl(local_view_ddl, ec_id, cid, db_path, has_unicode)
+                    resp['view'] = full_view_name
                     if not logging_utils.log_response_error(error_logger, resp):
                         checkpoint_metastore_set.write(full_view_name)
                     logging.info(resp)
